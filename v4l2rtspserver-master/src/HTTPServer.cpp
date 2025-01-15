@@ -65,24 +65,32 @@ void HTTPServer::HTTPClientConnection::streamSource(FramedSource* source)
 		Medium::close(m_TCPSink);
 		m_TCPSink = NULL;
       }
+ 	  if (m_Source != NULL) 	
+      {	
+		Medium::close(m_Source);	
+      }
       if (source != NULL) 
       {
 		m_TCPSink = new TCPSink(envir(), fClientOutputSocket);
 		m_TCPSink->startPlaying(*source, afterStreaming, this);
+		m_Source = source;
       }
 }
 
-static void lookupServerMediaSessionComplete(void* clientData, ServerMediaSession* session)
-{
-    ServerMediaSession** sesptr = (ServerMediaSession**)clientData;
-    *sesptr = session;
+void lookupServerMediaSessionCompletionFuncCallback(void* clientData, ServerMediaSession* sessionLookedUp) {
+	ServerMediaSession** ptr = (ServerMediaSession**)clientData;
+	*ptr = sessionLookedUp;
 }
 		
 ServerMediaSubsession* HTTPServer::HTTPClientConnection::getSubsession(const char* urlSuffix)
 {
 	ServerMediaSubsession* subsession = NULL;
         ServerMediaSession* session = NULL;
-        fOurServer.lookupServerMediaSession(urlSuffix, lookupServerMediaSessionComplete, &session);
+#if LIVEMEDIA_LIBRARY_VERSION_INT	<	1610582400	
+	session = fOurServer.lookupServerMediaSession(urlSuffix);
+#else
+	fOurServer.lookupServerMediaSession(urlSuffix, lookupServerMediaSessionCompletionFuncCallback, &session);
+#endif	
 	if (session != NULL) 
 	{
 		ServerMediaSubsessionIterator iter(*session);
@@ -244,18 +252,20 @@ void HTTPServer::HTTPClientConnection::handleHTTPCmd_StreamingGET(char const* ur
 		this->sendHeader("text/plain", content.size());
 		this->streamSource(content);
 	}
+	else if (strncmp(urlSuffix, "getSnapshot", strlen("getSnapshot")) == 0) 
+	{
+	}
 	else if (strncmp(urlSuffix, "getStreamList", strlen("getStreamList")) == 0) 
 	{
 		std::ostringstream os;
-		HTTPServer* httpServer = (HTTPServer*)(&fOurServer);
-		ServerMediaSessionIterator it(*httpServer);
-		ServerMediaSession* serverSession = NULL;
 		if (questionMarkPos != NULL) {
 			questionMarkPos++;
 			os << "var " << questionMarkPos << "=";
 		}
 		os << "[\n";
 		bool first = true;
+		ServerMediaSessionIterator it(fOurServer);
+		ServerMediaSession* serverSession = NULL;
 		while ( (serverSession = it.next()) != NULL) {
 			if (serverSession->duration() > 0) {
 				if (first) 
@@ -336,10 +346,19 @@ void HTTPServer::HTTPClientConnection::handleHTTPCmd_StreamingGET(char const* ur
 		Port clientRTPPort(0), clientRTCPPort(0), serverRTPPort(0), serverRTCPPort(0);
 		u_int8_t destinationTTL = 0;
 		Boolean isMulticast = False;
-                struct sockaddr_storage clientAddress = {0}, destinationAddress = {0};
-                clientAddress.ss_family = AF_INET;
-                destinationAddress.ss_family = AF_INET;
+#if LIVEMEDIA_LIBRARY_VERSION_INT < 1606953600		
+		netAddressBits clientAddress = 0;
+		netAddressBits destinationAddress = 0;
+#else
+		sockaddr_storage clientAddress = { 0 };
+		sockaddr_storage destinationAddress = { 0 };
+#endif		
+#if LIVEMEDIA_LIBRARY_VERSION_INT < 1636848000		
 		subsession->getStreamParameters(m_ClientSessionId, clientAddress, clientRTPPort,clientRTCPPort, -1,0,0, destinationAddress,destinationTTL, isMulticast, serverRTPPort,serverRTCPPort, m_StreamToken);
+#else
+
+		subsession->getStreamParameters(m_ClientSessionId, clientAddress, clientRTPPort, clientRTCPPort, -1, 0, 0, NULL, destinationAddress, destinationTTL, isMulticast, serverRTPPort, serverRTCPPort, m_StreamToken);
+#endif		
 
 		// Seek the stream source to the desired place, with the desired duration, and (as a side effect) get the number of bytes:
 		double dOffsetInSeconds = (double)offsetInSeconds;
@@ -366,10 +385,14 @@ void HTTPServer::HTTPClientConnection::handleHTTPCmd_StreamingGET(char const* ur
 	} 
 }
 
+void HTTPServer::HTTPClientSession::handleCmd_SETUP(RTSPServer::RTSPClientConnection* ourClientConnection, char const* urlPreSuffix, char const* urlSuffix, char const* fullRequestStr) {
+	envir() << "handleCmd_SETUP:" << fullRequestStr;
+	RTSPServer::RTSPClientSession::handleCmd_SETUP(ourClientConnection, urlPreSuffix, urlSuffix, fullRequestStr);
+}
+
 void HTTPServer::HTTPClientConnection::handleCmd_notFound() {
 	std::ostringstream os;
-	HTTPServer* httpServer = (HTTPServer*)(&fOurServer);
-	ServerMediaSessionIterator it(*httpServer);
+	ServerMediaSessionIterator it(fOurServer);
 	ServerMediaSession* serverSession = NULL;
 	while ( (serverSession = it.next()) != NULL) {
 		os << serverSession->streamName() << "\n";

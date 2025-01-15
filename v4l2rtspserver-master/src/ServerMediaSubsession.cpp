@@ -8,7 +8,7 @@
 ** -------------------------------------------------------------------------*/
 
 #include <sstream>
-
+#include <linux/videodev2.h>
 
 // project
 #include "ServerMediaSubsession.h"
@@ -81,6 +81,23 @@ RTPSink*  BaseServerMediaSubsession::createSink(UsageEnvironment& env, Groupsock
 	{
 		videoSink = JPEGVideoRTPSink::createNew (env, rtpGroupsock); 
     }
+#if LIVEMEDIA_LIBRARY_VERSION_INT >= 1596931200	
+	else if (format =="video/RAW") 
+	{ 
+		std::string sampling;
+		DeviceInterface* device = source->getDevice();
+		switch (device->getVideoFormat()) {
+			case V4L2_PIX_FMT_YUV444: sampling = "YCbCr-4:4:4"; break;
+			case V4L2_PIX_FMT_UYVY  : sampling = "YCbCr-4:2:2"; break;
+			case V4L2_PIX_FMT_NV12  : sampling = "YCbCr-4:2:0"; break;
+			case V4L2_PIX_FMT_RGB24 : sampling = "RGB"        ; break;
+			case V4L2_PIX_FMT_RGB32 : sampling = "RGBA"       ; break;
+			case V4L2_PIX_FMT_BGR24 : sampling = "BGR"        ; break;
+			case V4L2_PIX_FMT_BGR32 : sampling = "BGRA"       ; break;
+		}
+		videoSink = RawVideoRTPSink::createNew(env, rtpGroupsock, rtpPayloadTypeIfDynamic, device->getWidth(), device->getHeight(), 8, sampling.c_str(),"BT709-2");
+    } 
+#endif	
 	else if (format.find("audio/L16") == 0)
 	{
 		std::istringstream is(format);
@@ -95,11 +112,6 @@ RTPSink*  BaseServerMediaSubsession::createSink(UsageEnvironment& env, Groupsock
 	} else if (format == "audio/MPEG") 
 	{
 
-		/*
-		   unsigned char rtpPayloadFormat = 96; // A dynamic payload format code
-		   videoSink = MP3ADURTPSink::createNew(env, rtpGroupsock,
-		   rtpPayloadFormat);
-		   */
 		videoSink = MPEG1or2AudioRTPSink::createNew (env, rtpGroupsock);
 	}else if (format.find("audio/OPUS") ==0) 
 	{
@@ -136,9 +148,10 @@ char const* BaseServerMediaSubsession::getAuxLine(V4L2DeviceSource* source, RTPS
 		}
 		else if (source) {
 			unsigned char rtpPayloadType = rtpSink->rtpPayloadType();
+			DeviceInterface* device = source->getDevice();
 			os << "a=fmtp:" << int(rtpPayloadType) << " " << source->getAuxLine() << "\r\n";				
-			int width = source->getWidth();
-			int height = source->getHeight();
+			int width = device->getWidth();
+			int height = device->getHeight();
 			if ( (width > 0) && (height>0) ) {
 				os << "a=x-dimensions:" << width << "," <<  height  << "\r\n";				
 			}

@@ -3,35 +3,38 @@
 ** support, and with no warranty, express or implied, as to its usefulness for
 ** any purpose.
 **
-** H264_V4l2DeviceSource.h
+** H265_V4l2DeviceSource.h
 ** 
-** H264 V4L2 live555 source 
+** H265 V4L2 live555 source 
 **
 ** -------------------------------------------------------------------------*/
 
 
-#ifndef H264_V4L2_DEVICE_SOURCE
-#define H264_V4L2_DEVICE_SOURCE
+#ifndef H265_V4L2_DEVICE_SOURCE
+#define H265_V4L2_DEVICE_SOURCE
 
 // project
 #include "H26x_V4l2DeviceSource.h"
 #include "DeviceSource.h"
 
-class H264_V4L2DeviceSource : public H26X_V4L2DeviceSource
+class H265_V4L2DeviceSource : public H26X_V4L2DeviceSource
 {
 	public:				
-		static H264_V4L2DeviceSource* createNew(UsageEnvironment& env, DeviceInterface * device, int outputFd, unsigned int queueSize, bool useThread, bool repeatConfig, bool keepMarker) {
-			return new H264_V4L2DeviceSource(env, device, outputFd, queueSize, useThread, repeatConfig, keepMarker);
+		static H265_V4L2DeviceSource* createNew(UsageEnvironment& env, DeviceInterface * device, int outputFd, unsigned int queueSize, bool useThread, bool repeatConfig, bool keepMarker) {
+			return new H265_V4L2DeviceSource(env, device, outputFd, queueSize, useThread, repeatConfig, keepMarker);
 		}
 
 	protected:
-		H264_V4L2DeviceSource(UsageEnvironment& env, DeviceInterface * device, int outputFd, unsigned int queueSize, bool useThread, bool repeatConfig, bool keepMarker) 
+		H265_V4L2DeviceSource(UsageEnvironment& env, DeviceInterface * device, int outputFd, unsigned int queueSize, bool useThread, bool repeatConfig, bool keepMarker) 
 			: H26X_V4L2DeviceSource(env, device, outputFd, queueSize, useThread, repeatConfig, keepMarker) {} 
 	
 		// overide V4L2DeviceSource
 		virtual std::list< std::pair<unsigned char*,size_t> > splitFrames(unsigned char* frame, unsigned frameSize);			
 		virtual std::list< std::string > getInitFrames();
 		virtual bool isKeyFrame(const char*, int);
+				
+	protected:
+		std::string m_vps;
 };
 
 #endif

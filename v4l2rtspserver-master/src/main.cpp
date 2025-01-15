@@ -40,6 +40,7 @@
 #include "ImpEncoder.h"
 
 #include "H264_V4l2DeviceSource.h"
+#include "H265_V4l2DeviceSource.h"
 #include "ServerMediaSubsession.h"
 #include "UnicastServerMediaSubsession.h"
 #include "MulticastServerMediaSubsession.h"
@@ -91,10 +92,10 @@ UserAuthenticationDatabase* createUserAuthenticationDatabase(const std::list<std
 // -----------------------------------------
 //    create RTSP server
 // -----------------------------------------
-RTSPServer* createRTSPServer(UsageEnvironment& env, unsigned short rtspPort, unsigned short rtspOverHTTPPort, int timeout, unsigned int hlsSegment, const std::list<std::string> & userPasswordList, const char* realm, const std::string & webroot)
+RTSPServer* createRTSPServer(UsageEnvironment& env, unsigned short rtspPort, unsigned short rtspOverHTTPPort, int timeout, unsigned int hlsSegment, const std::list<std::string> & userPasswordList, const char* realm, const std::string & webroot, const char *sslkeycert = NULL)
 {
 	UserAuthenticationDatabase* auth = createUserAuthenticationDatabase(userPasswordList, realm);
-	RTSPServer* rtspServer = HTTPServer::createNew(env, rtspPort, auth, timeout, hlsSegment, webroot);
+	RTSPServer* rtspServer = HTTPServer::createNew(env, rtspPort, auth, timeout, hlsSegment, webroot, sslkeycert);
 	if (rtspServer != NULL)
 	{
 		// set http tunneling
@@ -312,6 +313,7 @@ int main(int argc, char **argv, char**environ) {
     std::string webroot;
     int inAudioFreq = 44100;
     int outAudioFreq = 44100;
+	const char* sslKeyCert = NULL;
     audioencoding encode = ENCODE_MP3;
 
 
@@ -367,6 +369,9 @@ int main(int argc, char **argv, char**environ) {
             case 'S':
                 hlsSegment = optarg ? atoi(optarg) : defaultHlsSegment;
                 break;
+			case 'x':
+				sslKeyCert = optarg;
+				break;
                 // users
             case 'R':
                 realm = optarg;
@@ -424,6 +429,7 @@ int main(int argc, char **argv, char**environ) {
                           << std::endl;
                 std::cout << "\t -S[duration]: enable HLS & MPEG-DASH with segment duration  in seconds (default "
                           << defaultHlsSegment << ")" << std::endl;
+				std::cout << "\t -x <sslkeycert>  : enable RTSPS & SRTP"                                 << std::endl;
 
                 std::cout << "\t -fformat  : capture using format (-W,-H,-F are used)" << std::endl;
                 std::cout << "\t -W width  : capture width (default " << width << ")" << std::endl;
@@ -463,7 +469,7 @@ int main(int argc, char **argv, char**environ) {
     decodeMulticastUrl(maddr, destinationAddress, rtpPortNum, rtcpPortNum);
 
     // create RTSP server
-    RTSPServer *rtspServer = createRTSPServer(*env, rtspPort, rtspOverHTTPPort, timeout, hlsSegment, userPasswordList, realm, webroot);
+    RTSPServer *rtspServer = createRTSPServer(*env, rtspPort, rtspOverHTTPPort, timeout, hlsSegment, userPasswordList, realm, webroot, sslKeyCert);
     if (rtspServer == NULL) {
 	    LOG_S(ERROR) << "Failed to create RTSP server: " << env->getResultMsg();
     } 

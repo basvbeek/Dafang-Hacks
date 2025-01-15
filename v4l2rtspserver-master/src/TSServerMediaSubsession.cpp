@@ -28,7 +28,7 @@ TSServerMediaSubsession::TSServerMediaSubsession(UsageEnvironment& env, StreamRe
 		// mux to TS		
 		muxer->addNewVideoSource(filter, 6);
 	}
-	if (audioformat == "audio") {
+	if (audioformat == "audio" || audioformat == "audio/MPEG") {
 		// mux to TS		
 		muxer->addNewAudioSource(source, 1);
 	}
