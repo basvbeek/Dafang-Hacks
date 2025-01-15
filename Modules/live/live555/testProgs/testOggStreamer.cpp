@@ -13,13 +13,15 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 **********/
-// Copyright (c) 1996-2021, Live Networks, Inc.  All rights reserved
+// Copyright (c) 1996-2025, Live Networks, Inc.  All rights reserved
 // A test program that reads a ".ogg" (i.e., Ogg) file, demultiplexes each track
 // (audio and/or video), and streams each track using RTP multicast.
 // main program
 
 #include <liveMedia.hh>
+
 #include <BasicUsageEnvironment.hh>
+#include "announceURL.hh"
 #include <GroupsockHelper.hh>
 
 UsageEnvironment* env;
@@ -133,10 +135,7 @@ void onOggFileCreation(OggFile* newFile, void* clientData) {
   }
 
   rtspServer->addServerMediaSession(sms);
-
-  char* url = rtspServer->rtspURL(sms);
-  *env << "Play this stream using the URL \"" << url << "\"\n";
-  delete[] url;
+  announceURL(rtspServer, sms);
 
   // Start the streaming:
   play();

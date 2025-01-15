@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "groupsock"
-// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2025 Live Networks, Inc.  All rights reserved.
 // Helper routines to implement 'group sockets'
 // C++ header
 
@@ -25,13 +25,17 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include "NetAddress.hh"
 #endif
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 int setupDatagramSocket(UsageEnvironment& env, Port port, int domain);
 int setupStreamSocket(UsageEnvironment& env, Port port, int domain,
 		      Boolean makeNonBlocking = True, Boolean setKeepAlive = False);
 
 int readSocket(UsageEnvironment& env,
 	       int socket, unsigned char* buffer, unsigned bufferSize,
-	       struct sockaddr_storage& fromAddress);
+	       struct sockaddr_storage& fromAddress /*set only if we're a datagram socket*/);
 
 Boolean writeSocket(UsageEnvironment& env,
 		    int socket, struct sockaddr_storage const& addressAndPort,
@@ -76,12 +80,19 @@ Boolean socketLeaveGroupSSM(UsageEnvironment&, int socket,
 
 Boolean getSourcePort(UsageEnvironment& env, int socket, int domain, Port& port);
 
-ipv4AddressBits ourIPAddress(UsageEnvironment& env); // in network order
+ipv4AddressBits ourIPv4Address(UsageEnvironment& env); // in network order
+ipv6AddressBits const& ourIPv6Address(UsageEnvironment& env);
 
-// IP addresses of our sending and receiving interfaces.  (By default, these
+Boolean weHaveAnIPv4Address(UsageEnvironment& env);
+Boolean weHaveAnIPv6Address(UsageEnvironment& env);
+Boolean weHaveAnIPAddress(UsageEnvironment& env);
+  // returns True if we have either an IPv4 or an IPv6 address
+
+// IPv4 addresses of our sending and receiving interfaces.  (By default, these
 // are INADDR_ANY (i.e., 0), specifying the default interface.)
 extern ipv4AddressBits SendingInterfaceAddr;
 extern ipv4AddressBits ReceivingInterfaceAddr;
+extern in6_addr ReceivingInterfaceAddr6;
 
 // Allocates a randomly-chosen IPv4 SSM (multicast) address:
 ipv4AddressBits chooseRandomIPv4SSMAddress(UsageEnvironment& env);
@@ -104,10 +115,11 @@ char const* timestampString();
     var.sin_addr.s_addr = (adr);\
     var.sin_port = (prt);\
     SET_SOCKADDR_SIN_LEN(var);
-#define MAKE_SOCKADDR_IN6(var,prt) /*adr,prt must be in network order*/\
+#define MAKE_SOCKADDR_IN6(var,adr,prt) /*adr,prt must be in network order*/\
     struct sockaddr_in6 var;\
+    memset(&var, 0, sizeof var);\
     var.sin6_family = AF_INET6;\
-    for (unsigned i = 0; i < 16; ++i) var.sin6_addr.s6_addr[i] = 0;\
+    var.sin6_addr=adr;\
     var.sin6_port = (prt);\
     SET_SOCKADDR_SIN6_LEN(var);
 

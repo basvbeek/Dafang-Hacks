@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "groupsock"
-// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2025 Live Networks, Inc.  All rights reserved.
 // Network Addresses
 // Implementation
 
@@ -23,12 +23,9 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #include <stddef.h>
 #include <stdio.h>
-#if defined(__WIN32__) || defined(_WIN32)
-#define USE_GETHOSTBYNAME 1 /*because at least some Windows don't have getaddrinfo()*/
-#else
+
 #ifndef INADDR_NONE
 #define INADDR_NONE 0xFFFFFFFF
-#endif
 #endif
 
 ////////// NetAddress //////////
@@ -107,7 +104,7 @@ Boolean addressIsNull(sockaddr_storage const& address) {
     }
     case AF_INET6: {
       for (unsigned i = 0; i < 16; ++i) {
-	if (((sockaddr_in6&)_nullIPv6Address).sin6_addr.s6_addr[i] != 0) return False;
+	if (((sockaddr_in6 const&)address).sin6_addr.s6_addr[i] != 0) return False;
       }
       return True;
     }
@@ -115,7 +112,6 @@ Boolean addressIsNull(sockaddr_storage const& address) {
       return False;
     }
   }
-  return address.ss_family == AF_INET && ((sockaddr_in const&)address).sin_addr.s_addr == 0;
 }
 
 SOCKLEN_T addressSize(sockaddr_storage const& address) {
@@ -515,14 +511,5 @@ portNumBits portNum(struct sockaddr_storage const& address) {
 }
 
 void setPortNum(struct sockaddr_storage& address, portNumBits portNum/*in network order*/) {
-  switch (address.ss_family) {
-    case AF_INET: {
-      ((sockaddr_in&)address).sin_port = portNum;
-      break;
-    }
-    case AF_INET6: {
-      ((sockaddr_in6&)address).sin6_port = portNum;
-      break;
-    }
-  }
+  ((sockaddr_in&)address).sin_port = portNum; // position will be the same for "sockaddr_in6"
 }

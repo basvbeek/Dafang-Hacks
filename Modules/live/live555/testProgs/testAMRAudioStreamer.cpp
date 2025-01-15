@@ -13,13 +13,15 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2021, Live Networks, Inc.  All rights reserved
+// Copyright (c) 1996-2025, Live Networks, Inc.  All rights reserved
 // A test program that reads an AMR audio file (as defined in RFC 3267)
 // and streams it using RTP
 // main program
 
 #include "liveMedia.hh"
+
 #include "BasicUsageEnvironment.hh"
+#include "announceURL.hh"
 #include "GroupsockHelper.hh"
 
 UsageEnvironment* env;
@@ -82,10 +84,7 @@ int main(int argc, char** argv) {
 					   True /*SSM*/);
   sms->addSubsession(PassiveServerMediaSubsession::createNew(*audioSink, rtcp));
   rtspServer->addServerMediaSession(sms);
-
-  char* url = rtspServer->rtspURL(sms);
-  *env << "Play this stream using the URL \"" << url << "\"\n";
-  delete[] url;
+  announceURL(rtspServer, sms);
 
   // Start the streaming:
   *env << "Beginning streaming...\n";

@@ -13,7 +13,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2025 Live Networks, Inc.  All rights reserved.
 // 'Group sockets'
 // Implementation
 
@@ -24,6 +24,11 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include <sstream>
 #endif
 #include <stdio.h>
+
+////////// library version constants //////////
+
+extern char const* const groupsockLibraryVersionStr = GROUPSOCK_LIBRARY_VERSION_STRING;
+extern int const groupsockLibraryVersionInt = GROUPSOCK_LIBRARY_VERSION_INT;
 
 ///////// OutputSocket //////////
 
@@ -105,7 +110,7 @@ Groupsock::Groupsock(UsageEnvironment& env, struct sockaddr_storage const& group
   }
 
   // Make sure we can get our source address:
-  if (ourIPAddress(env) == 0) {
+  if (!weHaveAnIPAddress(env)) {
     if (DebugLevel >= 0) { // this is a fatal error
       env << "Unable to determine our source address: "
 	  << env.getResultMsg() << "\n";
@@ -225,7 +230,7 @@ void Groupsock::addDestination(struct sockaddr_storage const& addr, Port const& 
   for (destRecord* dest = fDests; dest != NULL; dest = dest->fNext) {
     if (dest->fSessionId == sessionId &&
 	dest->fGroupEId.groupAddress() == addr &&
-	dest->fGroupEId.portNum() == portNum(addr)) {
+	dest->fGroupEId.portNum() == port.num()) {
       return;
     }
   }
@@ -319,7 +324,7 @@ Boolean Groupsock::wasLoopedBackFromUs(UsageEnvironment& env,
   if (fromAddressAndPort.ss_family != AF_INET) return False; // later update for IPv6
   
   struct sockaddr_in const& fromAddressAndPort4 = (struct sockaddr_in const&)fromAddressAndPort;
-  if (fromAddressAndPort4.sin_addr.s_addr == ourIPAddress(env) ||
+  if (fromAddressAndPort4.sin_addr.s_addr == ourIPv4Address(env) ||
       fromAddressAndPort4.sin_addr.s_addr == 0x7F000001/*127.0.0.1*/) {
     if (portNum(fromAddressAndPort) == sourcePortNum()) {
 #ifdef DEBUG_LOOPBACK_CHECKING

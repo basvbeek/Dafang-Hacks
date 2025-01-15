@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2025 Live Networks, Inc.  All rights reserved.
 // A generic SIP client
 // Implementation
 
@@ -74,7 +74,7 @@ SIPClient::SIPClient(UsageEnvironment& env,
 
   struct sockaddr_storage ourAddress;
   ourAddress.ss_family = AF_INET; // Later, fix to support IPv6
-  ((struct sockaddr_in&)ourAddress).sin_addr.s_addr = ourIPAddress(env);
+  ((struct sockaddr_in&)ourAddress).sin_addr.s_addr = ourIPv4Address(env);
   fOurAddressStr = strDup(AddressString(ourAddress).val());
   fOurAddressStrSize = strlen(fOurAddressStr);
 
@@ -107,7 +107,6 @@ SIPClient::SIPClient(UsageEnvironment& env,
 
   // Set the "User-Agent:" header to use in each request:
   char const* const libName = "LIVE555 Streaming Media v";
-  char const* const libVersionStr = LIVEMEDIA_LIBRARY_VERSION_STRING;
   char const* libPrefix; char const* libSuffix;
   if (applicationName == NULL || applicationName[0] == '\0') {
     applicationName = libPrefix = libSuffix = "";
@@ -116,10 +115,10 @@ SIPClient::SIPClient(UsageEnvironment& env,
     libSuffix = ")";
   }
   unsigned userAgentNameSize
-    = fApplicationNameSize + strlen(libPrefix) + strlen(libName) + strlen(libVersionStr) + strlen(libSuffix) + 1;
+    = fApplicationNameSize + strlen(libPrefix) + strlen(libName) + strlen(liveMediaLibraryVersionStr) + strlen(libSuffix) + 1;
   char* userAgentName = new char[userAgentNameSize];
   sprintf(userAgentName, "%s%s%s%s%s",
-	  applicationName, libPrefix, libName, libVersionStr, libSuffix);
+	  applicationName, libPrefix, libName, liveMediaLibraryVersionStr, libSuffix);
   setUserAgentString(userAgentName);
   delete[] userAgentName;
 
@@ -596,11 +595,11 @@ unsigned SIPClient::getResponseCode() {
         while (numExtraBytesNeeded > 0) {
           char* ptr = &readBuf[bytesRead];
 	  unsigned bytesRead2;
-	  struct sockaddr_storage fromAddr;
+	  struct sockaddr_storage dummy; // not used
 	  Boolean readSuccess
 	    = fOurSocket->handleRead((unsigned char*)ptr,
 				     numExtraBytesNeeded,
-				     bytesRead2, fromAddr);
+				     bytesRead2, dummy);
           if (!readSuccess) break;
           ptr[bytesRead2] = '\0';
           if (fVerbosityLevel >= 1) {
@@ -928,11 +927,11 @@ unsigned SIPClient::getResponse(char*& responseBuffer,
   int bytesRead = 0;
   while (bytesRead < (int)responseBufferSize) {
     unsigned bytesReadNow;
-    struct sockaddr_storage fromAddr;
+    struct sockaddr_storage dummy; // not used
     unsigned char* toPosn = (unsigned char*)(responseBuffer+bytesRead);
     Boolean readSuccess
       = fOurSocket->handleRead(toPosn, responseBufferSize-bytesRead,
-			       bytesReadNow, fromAddr);
+			       bytesReadNow, dummy);
     if (!readSuccess || bytesReadNow == 0) {
       envir().setResultMsg("SIP response was truncated");
       break;

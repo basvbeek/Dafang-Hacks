@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "groupsock"
-// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2025 Live Networks, Inc.  All rights reserved.
 // Helper routines to implement 'group sockets'
 // Implementation
 
@@ -42,11 +42,16 @@ extern "C" int initializeWinsockIfNecessary();
 #include <signal.h>
 #define USE_SIGNALS 1
 #endif
+#ifndef NO_GETIFADDRS
+#include <ifaddrs.h>
+#include <net/if.h>
+#endif
 #include <stdio.h>
 
-// By default, use INADDR_ANY for the sending and receiving interfaces:
+// By default, use INADDR_ANY for the sending and receiving interfaces (IPv4 only):
 ipv4AddressBits SendingInterfaceAddr = INADDR_ANY;
 ipv4AddressBits ReceivingInterfaceAddr = INADDR_ANY;
+in6_addr ReceivingInterfaceAddr6 = IN6ADDR_ANY_INIT;
 
 static void socketErr(UsageEnvironment& env, char const* errorMsg) {
   env.setResultErrMsg(errorMsg);
@@ -172,8 +177,14 @@ int setupDatagramSocket(UsageEnvironment& env, Port port, int domain) {
     }
 #endif
   } else { // IPv6
+    in6_addr addr = IN6ADDR_ANY_INIT;
     if (port.num() != 0) {
-      MAKE_SOCKADDR_IN6(name, port.num());
+      // For IPv6 sockets, we need the IPV6_V6ONLY flag set to 1, otherwise we would not
+      // be able to have an IPv4 socket and an IPv6 socket bound to the same port:
+      int const one = 1;
+      (void)setsockopt(newSocket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&one, sizeof one);
+
+      MAKE_SOCKADDR_IN6(name, addr, port.num());
       if (bind(newSocket, (struct sockaddr*)&name, sizeof name) != 0) {
 	char tmpBuffer[100];
 	sprintf(tmpBuffer, "IPv6 bind() error (port number: %d): ", ntohs(port.num()));
@@ -185,7 +196,7 @@ int setupDatagramSocket(UsageEnvironment& env, Port port, int domain) {
   }
 
   // Set the sending interface for multicasts, if it's not the default:
-  if (SendingInterfaceAddr != INADDR_ANY) {
+  if (SendingInterfaceAddr != INADDR_ANY) { // later, fix for IPv6
     struct in_addr addr;
     addr.s_addr = SendingInterfaceAddr;
 
@@ -339,7 +350,12 @@ int setupStreamSocket(UsageEnvironment& env, Port port, int domain,
 #endif
   } else { // IPv6
     if (port.num() != 0) {
-      MAKE_SOCKADDR_IN6(name, port.num());
+      // For IPv6 sockets, we need the IPV6_V6ONLY flag set to 1, otherwise we would not
+      // be able to have an IPv4 socket and an IPv6 socket bound to the same port:
+      int const one = 1;
+      (void)setsockopt(newSocket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&one, sizeof one);
+
+      MAKE_SOCKADDR_IN6(name, ReceivingInterfaceAddr6, port.num());
       if (bind(newSocket, (struct sockaddr*)&name, sizeof name) != 0) {
 	char tmpBuffer[100];
 	sprintf(tmpBuffer, "IPv6 bind() error (port number: %d): ", ntohs(port.num()));
@@ -394,16 +410,6 @@ int readSocket(UsageEnvironment& env,
 	|| err == EAGAIN
 #endif
 	|| err == 113 /*EHOSTUNREACH (Linux)*/) { // Why does Linux return this for datagram sock?
-      switch (fromAddress.ss_family) {
-	case AF_INET: {
-	  ((sockaddr_in&)fromAddress).sin_addr.s_addr = 0;
-	  break;
-	}
-        case AF_INET6: {
-	  for (unsigned i = 0; i < 16; ++i) ((sockaddr_in6&)fromAddress).sin6_addr.s6_addr[i] = 0;
-	  break;
-	}
-      }
       return 0;
     }
     //##### END HACK
@@ -443,7 +449,7 @@ Boolean writeSocket(UsageEnvironment& env,
 		    unsigned char* buffer, unsigned bufferSize) {
   do {
     SOCKLEN_T dest_len = addressSize(addressAndPort);
-    int bytesSent = sendto(socket, (char*)buffer, bufferSize, 0,
+    int bytesSent = sendto(socket, (char*)buffer, bufferSize, MSG_NOSIGNAL,
 			   (struct sockaddr const*)&addressAndPort, dest_len);
     if (bytesSent != (int)bufferSize) {
       char tmpBuf[100];
@@ -583,7 +589,7 @@ Boolean socketJoinGroup(UsageEnvironment& env, int socket,
       return False;
     }
   }
-  if (setsockopt(socket, level, option_name, option_value, option_len) < 0) {
+  if (setsockopt(socket, level, option_name, (const char*)option_value, option_len) < 0) {
 #if defined(__WIN32__) || defined(_WIN32)
     if (env.getErrno() != 0) {
       // That piece-of-shit toy operating system (Windows) sometimes lies
@@ -636,7 +642,7 @@ Boolean socketLeaveGroup(UsageEnvironment&, int socket,
       return False;
     }
   }
-  if (setsockopt(socket, level, option_name, option_value, option_len) < 0) {
+  if (setsockopt(socket, level, option_name, (const char*)option_value, option_len) < 0) {
     return False;
   }
 
@@ -736,7 +742,8 @@ Boolean getSourcePort(UsageEnvironment& env, int socket, int domain, Port& port)
       MAKE_SOCKADDR_IN(name, INADDR_ANY, 0);
       bind(socket, (struct sockaddr*)&name, sizeof name);
     } else { // IPv6
-      MAKE_SOCKADDR_IN6(name, 0);
+      in6_addr const in6addr_any_init = IN6ADDR_ANY_INIT;
+      MAKE_SOCKADDR_IN6(name, in6addr_any_init, 0);
       bind(socket, (struct sockaddr*)&name, sizeof name);
     }
 
@@ -759,17 +766,20 @@ static Boolean isBadIPv4AddressForUs(ipv4AddressBits addr) {
 }
 
 static Boolean isBadIPv6AddressForUs(ipv6AddressBits addr) {
-  // We consider an IPv6 address bad only if the first 15 bytes are 0,
-  // and the 16th byte is 0 (unspecified) or 1 (loopback):
+  // We consider an IPv6 address bad if:
+  //   - the first 10 bits are 0xFE8, indicating a link-local or site-local address, or
+  //   - the first 15 bytes are 0, and the 16th byte is 0 (unspecified) or 1 (loopback)
+  if (addr[0] == 0xFE) return (addr[1]&0x80) != 0;
+  
   for (unsigned i = 0; i < 15; ++i) {
     if (addr[i] != 0) return False;
   }
 
-  return addr[15] == 0 || addr[15] == 1;
+    return addr[15] == 0 || addr[15] == 1;
 }
 
-static Boolean isBadAddressForUs(struct sockaddr_storage const& addr) {
-  switch (addr.ss_family) {
+static Boolean isBadAddressForUs(struct sockaddr const& addr) {
+  switch (addr.sa_family) {
     case AF_INET: {
       return isBadIPv4AddressForUs(((sockaddr_in&)addr).sin_addr.s_addr);
     }
@@ -792,81 +802,121 @@ static Boolean isBadAddressForUs(NetAddress const& addr) {
   }
 }
 
-Boolean loopbackWorks = 1;
+static void getOurIPAddresses(UsageEnvironment& env); // forward
 
-ipv4AddressBits ourIPAddress(UsageEnvironment& env) {
-  static ipv4AddressBits ourAddress = 0;
-  int sock = -1;
-  struct sockaddr_storage testAddr;
+static ipv4AddressBits _ourIPv4Address = 0;
+#define _weHaveAnIPv4Address (_ourIPv4Address != 0)
 
+ipv4AddressBits ourIPv4Address(UsageEnvironment& env) {
   if (ReceivingInterfaceAddr != INADDR_ANY) {
     // Hack: If we were told to receive on a specific interface address, then 
     // define this to be our ip address:
-    ourAddress = ReceivingInterfaceAddr;
+    _ourIPv4Address = ReceivingInterfaceAddr;
   }
 
-  if (ourAddress == 0) {
-    // We need to find our source address
-    struct sockaddr_storage fromAddr = nullAddress();
+  if (!_weHaveAnIPv4Address) {
+    getOurIPAddresses(env);
+  }
 
-    // Get our address by sending a (0-TTL) multicast packet,
-    // receiving it, and looking at the source address used.
-    // (This is kinda bogus, but it provides the best guarantee
-    // that other nodes will think our address is the same as we do.)
-    do {
-      loopbackWorks = 0; // until we learn otherwise
+  return _ourIPv4Address;
+}
 
-#ifndef DISABLE_LOOPBACK_IP_ADDRESS_CHECK
-      NetAddressList testAddrs("228.67.43.91");
-      if (testAddrs.numAddresses() == 0) break; // shouldn't happen
-      copyAddress(testAddr, testAddrs.firstAddress());
+static ipv6AddressBits _ourIPv6Address;
+static Boolean _weHaveAnIPv6Address = False;
 
-      Port testPort(15947);
+ipv6AddressBits const& ourIPv6Address(UsageEnvironment& env) {
+  if (!_weHaveAnIPv6Address) {
+    getOurIPAddresses(env);
+  }
 
-      sock = setupDatagramSocket(env, testPort, AF_INET);
-      if (sock < 0) break;
+  return _ourIPv6Address;
+}
 
-      if (!socketJoinGroup(env, sock, testAddr)) break;
+Boolean weHaveAnIPv4Address(UsageEnvironment& env) {
+  if (_weHaveAnIPv4Address || _weHaveAnIPv6Address) return _weHaveAnIPv4Address;
 
-      unsigned char testString[] = "hostIdTest";
-      unsigned testStringLength = sizeof testString;
+  getOurIPAddresses(env);
+  return _weHaveAnIPv4Address;
+}
 
-      MAKE_SOCKADDR_IN(testAddressAndPort, ((struct sockaddr_in&)testAddr).sin_addr.s_addr, testPort.num());
-      if (!writeSocket(env, sock, (struct sockaddr_storage const&)testAddressAndPort, 0,
-		       testString, testStringLength)) break;
+Boolean weHaveAnIPv6Address(UsageEnvironment& env) {
+  if (_weHaveAnIPv4Address || _weHaveAnIPv6Address) return _weHaveAnIPv6Address;
 
-      // Block until the socket is readable (with a 5-second timeout):
-      fd_set rd_set;
-      FD_ZERO(&rd_set);
-      FD_SET((unsigned)sock, &rd_set);
-      const unsigned numFds = sock+1;
-      struct timeval timeout;
-      timeout.tv_sec = 5;
-      timeout.tv_usec = 0;
-      int result = select(numFds, &rd_set, NULL, NULL, &timeout);
-      if (result <= 0) break;
+  getOurIPAddresses(env);
+  return _weHaveAnIPv6Address;
+}
 
-      unsigned char readBuffer[20];
-      int bytesRead = readSocket(env, sock,
-				 readBuffer, sizeof readBuffer,
-				 fromAddr);
-      if (bytesRead != (int)testStringLength
-	  || strncmp((char*)readBuffer, (char*)testString, testStringLength) != 0) {
-	break;
-      }
+Boolean weHaveAnIPAddress(UsageEnvironment& env) {
+  if (_weHaveAnIPv4Address || _weHaveAnIPv6Address) return True;
 
-      // We use this packet's source address, if it's good:
-      loopbackWorks = !isBadAddressForUs(fromAddr);
+  getOurIPAddresses(env);
+  return _weHaveAnIPv4Address || _weHaveAnIPv6Address;
+}
+
+static void copyAddress(struct sockaddr_storage& to, struct sockaddr const* from) {
+  // Copy a "struct sockaddr" to a "struct sockaddr_storage" (assumed to be large enough)
+  if (from == NULL) return;
+  
+  switch (from->sa_family) {
+    case AF_INET: {
+#ifdef HAVE_SOCKADDR_LEN
+      if (from->sa_len < sizeof (struct sockaddr_in)) return; // sanity check
+      to.ss_len = sizeof (struct sockaddr_in);
 #endif
-    } while (0);
-
-    if (sock >= 0) {
-      socketLeaveGroup(env, sock, testAddr);
-      closeSocket(sock);
+      to.ss_family = AF_INET;
+      ((sockaddr_in&)to).sin_addr.s_addr = ((sockaddr_in const*)from)->sin_addr.s_addr;
+      break;
     }
+    case AF_INET6: {
+#ifdef HAVE_SOCKADDR_LEN
+      if (from->sa_len < sizeof (struct sockaddr_in6)) return; // sanity check
+      to.ss_len = sizeof (struct sockaddr_in6);
+#endif
+      to.ss_family = AF_INET6;
+      for (unsigned i = 0; i < 16; ++i) {
+	((sockaddr_in6&)to).sin6_addr.s6_addr[i] = ((sockaddr_in6 const*)from)->sin6_addr.s6_addr[i];
+      }
+      break;
+    }
+  }
+}
 
-    if (!loopbackWorks) do {
-      // We couldn't find our address using multicast loopback,
+void getOurIPAddresses(UsageEnvironment& env) {
+  // We use two methods to (try to) get our IP addresses.
+  // First, we use "getifaddrs()".  But if that doesn't work
+  // (or if "getifaddrs()" is not defined), then we use an alternative (more old-fashioned)
+  // mechanism: First get our host name, then try resolving this host name.
+  struct sockaddr_storage foundIPv4Address = nullAddress(AF_INET);
+  struct sockaddr_storage foundIPv6Address = nullAddress(AF_INET6);
+
+  Boolean getifaddrsWorks = False; // until we learn otherwise
+#ifndef NO_GETIFADDRS
+  struct ifaddrs* ifap;
+
+  if (getifaddrs(&ifap) == 0) {
+    // Look through all interfaces:
+    for (struct ifaddrs* p = ifap; p != NULL; p = p->ifa_next) {
+      // Ignore an interface if it's not up, or is a loopback interface:
+      if ((p->ifa_flags&IFF_UP) == 0 || (p->ifa_flags&IFF_LOOPBACK) != 0) continue;
+
+      // Also ignore the interface if the address is considered 'bad' for us:
+      if (p->ifa_addr == NULL || isBadAddressForUs(*p->ifa_addr)) continue;
+      
+      // We take the first IPv4 and first IPv6 addresses:
+      if (p->ifa_addr->sa_family == AF_INET && addressIsNull(foundIPv4Address)) {
+	copyAddress(foundIPv4Address, p->ifa_addr);
+	getifaddrsWorks = True;
+      } else if (p->ifa_addr->sa_family == AF_INET6 && addressIsNull(foundIPv6Address)) {
+	copyAddress(foundIPv6Address, p->ifa_addr);
+	getifaddrsWorks = True;
+      }
+    }
+    freeifaddrs(ifap);
+  }
+#endif
+
+    if (!getifaddrsWorks) do {
+      // We couldn't find our address using "getifaddrs()",
       // so try instead to look it up directly - by first getting our host name,
       // and then resolving this host name
       char hostname[100];
@@ -877,45 +927,50 @@ ipv4AddressBits ourIPAddress(UsageEnvironment& env) {
 	break;
       }
 
-      // Try to resolve "hostname" to an IP address:
+      // Try to resolve "hostname" to one or more IP addresses:
       NetAddressList addresses(hostname);
       NetAddressList::Iterator iter(addresses);
 
-      // Take the first address that's not bad:
+      // Look at each address, rejecting any that are bad.
+      // We take the first IPv4 and first IPv6 addresses, if any.
       NetAddress const* address;
       while ((address = iter.nextAddress()) != NULL) {
-	if (!isBadAddressForUs(*address)) break;
-      }
-      if (address == NULL) break; // no good address found
+	if (isBadAddressForUs(*address)) continue;
 
-      // Assign the address that we found to "fromAddr" (as if the 'loopback' method had worked),
-      // to simplify the code below: 
-      copyAddress(fromAddr, address);
+	if (address->length() == sizeof (ipv4AddressBits) && addressIsNull(foundIPv4Address)) {
+	  copyAddress(foundIPv4Address, address);
+	} else if (address->length() == sizeof (ipv6AddressBits) && addressIsNull(foundIPv6Address)) {
+	  copyAddress(foundIPv6Address, address);
+	}
+      }
     } while (0);
 
-    // Make sure we have a good address:
-    if (isBadAddressForUs(fromAddr)) {
-      char tmp[100];
-      sprintf(tmp, "This computer has an invalid IP address: %s", AddressString(fromAddr).val());
-      env.setResultMsg(tmp);
-      fromAddr = nullAddress();
+    // Note the IPv4 and IPv6 addresses that we found:
+    _ourIPv4Address = ((sockaddr_in&)foundIPv4Address).sin_addr.s_addr;
+
+    for (unsigned i = 0; i < 16; ++i) {
+      _ourIPv6Address[i] = ((sockaddr_in6&)foundIPv6Address).sin6_addr.s6_addr[i];
+      if (_ourIPv6Address[i] != 0) _weHaveAnIPv6Address = True;
     }
 
-    ourAddress = fromAddr.ss_family == AF_INET ? ((sockaddr_in&)fromAddr).sin_addr.s_addr : 0;
+    if (!_weHaveAnIPv4Address && !_weHaveAnIPv6Address) {
+      env.setResultMsg("This computer does not have a valid IP (v4 or v6) address!");
+    }
 
-    // Use our newly-discovered IP address, and the current time,
+    // Use our newly-discovered IP addresses, and the current time,
     // to initialize the random number generator's seed:
     struct timeval timeNow;
     gettimeofday(&timeNow, NULL);
-    unsigned seed = ourAddress^timeNow.tv_sec^timeNow.tv_usec;
+    unsigned seed = _ourIPv4Address^timeNow.tv_sec^timeNow.tv_usec;
+    for (unsigned i = 0; i < 16; i += 4) {
+      seed ^= (_ourIPv6Address[i]<<24)|(_ourIPv6Address[i+1]<<16)|(_ourIPv6Address[i+2]<<8)|_ourIPv6Address[i+3];
+    }
     our_srandom(seed);
-  }
-  return ourAddress;
 }
 
 ipv4AddressBits chooseRandomIPv4SSMAddress(UsageEnvironment& env) {
   // First, a hack to ensure that our random number generator is seeded:
-  (void) ourIPAddress(env);
+  (void)ourIPv4Address(env);
 
   // Choose a random address in the range [232.0.1.0, 232.255.255.255)
   // i.e., [0xE8000100, 0xE8FFFFFF)

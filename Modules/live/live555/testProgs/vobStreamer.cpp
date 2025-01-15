@@ -13,15 +13,17 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2021, Live Networks, Inc.  All rights reserved
+// Copyright (c) 1996-2025, Live Networks, Inc.  All rights reserved
 // A test program that reads a VOB file
 // splits it into Audio (AC3) and Video (MPEG) Elementary Streams,
 // and streams both using RTP.
 // main program
 
 #include "liveMedia.hh"
+
 #include "AC3AudioStreamFramer.hh"
 #include "BasicUsageEnvironment.hh"
+#include "announceURL.hh"
 #include "GroupsockHelper.hh"
 
 char const* programName;
@@ -209,11 +211,7 @@ int main(int argc, char const** argv) {
     rtspServer->addServerMediaSession(sms);
 
     *env << "Created RTSP server.\n";
-
-    // Display our "rtsp://" URL, for clients to connect to:
-    char* url = rtspServer->rtspURL(sms);
-    *env << "Access this stream using the URL:\n\t" << url << "\n";
-    delete[] url;
+    announceURL(rtspServer, sms);
   }
 
   // Finally, start the streaming:

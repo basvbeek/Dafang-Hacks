@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "groupsock"
-// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2025 Live Networks, Inc.  All rights reserved.
 // Network Addresses
 // C++ header
 
@@ -181,7 +181,7 @@ public:
   // IPv4 input:
   AddressString(struct sockaddr_in const& addr);
   AddressString(struct in_addr const& addr);
-  AddressString(ipv4AddressBits const& addr); // "addr" is assumed to be in host byte order
+  AddressString(ipv4AddressBits const& addr); // "addr" is assumed to be in network byte order
 
   // IPv6 input:
   AddressString(struct sockaddr_in6 const& addr);

@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2025 Live Networks, Inc.  All rights reserved.
 // A data structure that represents a session that consists of
 // potentially multiple (audio and/or video) sub-sessions
 // (This data structure is used for media *streamers* - i.e., servers.
@@ -56,22 +56,22 @@ Boolean ServerMediaSession
 }
 
 static char const* const libNameStr = "LIVE555 Streaming Media v";
-char const* const libVersionStr = LIVEMEDIA_LIBRARY_VERSION_STRING;
 
 ServerMediaSession::ServerMediaSession(UsageEnvironment& env,
 				       char const* streamName,
 				       char const* info,
 				       char const* description,
 				       Boolean isSSM, char const* miscSDPLines)
-  : Medium(env), fIsSSM(isSSM), fSubsessionsHead(NULL),
+  : Medium(env), streamingUsesSRTP(False), streamingIsEncrypted(False),
+    fIsSSM(isSSM), fSubsessionsHead(NULL),
     fSubsessionsTail(NULL), fSubsessionCounter(0),
     fReferenceCount(0), fDeleteWhenUnreferenced(False) {
   fStreamName = strDup(streamName == NULL ? "" : streamName);
 
   char* libNamePlusVersionStr = NULL; // by default
   if (info == NULL || description == NULL) {
-    libNamePlusVersionStr = new char[strlen(libNameStr) + strlen(libVersionStr) + 1];
-    sprintf(libNamePlusVersionStr, "%s%s", libNameStr, libVersionStr);
+    libNamePlusVersionStr = new char[strlen(libNameStr) + strlen(liveMediaLibraryVersionStr) + 1];
+    sprintf(libNamePlusVersionStr, "%s%s", libNameStr, liveMediaLibraryVersionStr);
   }
   fInfoSDPString = strDup(info == NULL ? libNamePlusVersionStr : info);
   fDescriptionSDPString = strDup(description == NULL ? libNamePlusVersionStr : description);
@@ -209,7 +209,18 @@ Boolean ServerMediaSession::isServerMediaSession() const {
 }
 
 char* ServerMediaSession::generateSDPDescription(int addressFamily) {
-  AddressString ipAddressStr(ourIPAddress(envir()));
+  struct sockaddr_storage ourAddress;
+  if (addressFamily == AF_INET) {
+    ourAddress.ss_family = AF_INET;
+    ((sockaddr_in&)ourAddress).sin_addr.s_addr = ourIPv4Address(envir());
+  } else { // IPv6
+    ourAddress.ss_family = AF_INET6;
+    for (unsigned i = 0; i < 16; ++i) {
+      ((sockaddr_in6&)ourAddress).sin6_addr.s6_addr[i] = ourIPv6Address(envir())[i];
+    }
+  }
+  
+  AddressString ipAddressStr(ourAddress);
   unsigned ipAddressStrSize = strlen(ipAddressStr.val());
 
   // For a SSM sessions, we need a "a=source-filter: incl ..." line also:
@@ -249,7 +260,7 @@ char* ServerMediaSession::generateSDPDescription(int addressFamily) {
     // Unless subsessions have differing durations, we also have a "a=range:" line:
     float dur = duration();
     if (dur == 0.0) {
-      rangeLine = strDup("a=range:npt=0-\r\n");
+      rangeLine = strDup("a=range:npt=now-\r\n");
     } else if (dur > 0.0) {
       char buf[100];
       sprintf(buf, "a=range:npt=0-%.3f\r\n", dur);
@@ -260,7 +271,7 @@ char* ServerMediaSession::generateSDPDescription(int addressFamily) {
 
     char const* const sdpPrefixFmt =
       "v=0\r\n"
-      "o=- %ld%06ld %d IN %s %s\r\n"
+      "o=- %lld%06lld %d IN %s %s\r\n"
       "s=%s\r\n"
       "i=%s\r\n"
       "t=0 0\r\n"
@@ -276,7 +287,7 @@ char* ServerMediaSession::generateSDPDescription(int addressFamily) {
       + 20 + 6 + 20 + 3/*IP4 or IP6*/ + ipAddressStrSize
       + strlen(fDescriptionSDPString)
       + strlen(fInfoSDPString)
-      + strlen(libNameStr) + strlen(libVersionStr)
+      + strlen(libNameStr) + strlen(liveMediaLibraryVersionStr)
       + strlen(sourceFilterLine)
       + strlen(rangeLine)
       + strlen(fDescriptionSDPString)
@@ -288,13 +299,13 @@ char* ServerMediaSession::generateSDPDescription(int addressFamily) {
 
     // Generate the SDP prefix (session-level lines):
     snprintf(sdp, sdpLength, sdpPrefixFmt,
-	     fCreationTime.tv_sec, fCreationTime.tv_usec, // o= <session id>
+	     (long long)fCreationTime.tv_sec, (long long)fCreationTime.tv_usec, // o= <session id>
 	     1, // o= <version> // (needs to change if params are modified)
 	     addressFamily == AF_INET ? "IP4" : "IP6", // o= <address family>
 	     ipAddressStr.val(), // o= <address>
 	     fDescriptionSDPString, // s= <description>
 	     fInfoSDPString, // i= <info>
-	     libNameStr, libVersionStr, // a=tool:
+	     libNameStr, liveMediaLibraryVersionStr, // a=tool:
 	     sourceFilterLine, // a=source-filter: incl (if a SSM session)
 	     rangeLine, // a=range: line
 	     fDescriptionSDPString, // a=x-qt-text-nam: line
@@ -348,7 +359,7 @@ void ServerMediaSubsessionIterator::reset() {
 
 ServerMediaSubsession::ServerMediaSubsession(UsageEnvironment& env)
   : Medium(env),
-    fParentSession(NULL), fNext(NULL), fTrackNumber(0), fTrackId(NULL) {
+    fParentSession(NULL), fSRTP_ROC(0), fNext(NULL), fTrackNumber(0), fTrackId(NULL) {
 }
 
 ServerMediaSubsession::~ServerMediaSubsession() {
@@ -444,7 +455,7 @@ ServerMediaSubsession::rangeSDPLine() const {
   // Use our own duration for a "a=range:" line:
   float ourDuration = duration();
   if (ourDuration == 0.0) {
-    return strDup("a=range:npt=0-\r\n");
+    return strDup("a=range:npt=now-\r\n");
   } else {
     char buf[100];
     sprintf(buf, "a=range:npt=0-%.3f\r\n", ourDuration);
