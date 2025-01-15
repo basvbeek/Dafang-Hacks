@@ -12,7 +12,7 @@ export LDFLAGS="${LDFLAGS} -lrt -lssl -ltls -lcrypto -lpthread"
 
 if [ ! -d mosquitto/.git ]
 then
-  git clone https://github.com/eclipse/mosquitto.git
+  git clone -b v2.0.19 https://github.com/eclipse/mosquitto.git
   patch mosquitto/config.mk config.diff 
 fi
 
