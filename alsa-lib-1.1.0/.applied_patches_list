@@ -1,0 +1,6 @@
+0001-add-missing-include.patch
+0002-no-mmu.patch
+0003-dlmisc.patch
+0004-conditional-enabling-of-libdl-in-m4.patch
+0005-musl-pcm-h.patch
+buildroot-libtool-v2.4.4.patch
