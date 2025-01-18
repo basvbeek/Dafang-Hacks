@@ -1,0 +1,136 @@
+rdswitch.o: rdswitch.c cdjpeg.h jinclude.h jconfig.h \
+ /root/toolchain/bin/../lib/gcc/mips-linux-gnu/4.7.2/include/stddef.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/stdlib.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/features.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_config.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sys/cdefs.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sys/types.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/types.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/wordsize.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/typesizes.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/pthreadtypes.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/endian.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/endian.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/byteswap.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/byteswap.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/byteswap-common.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sgidefs.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/time.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sys/select.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/select.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/sigset.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/time.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sys/sysmacros.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/alloca.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/stdio.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_stdio.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/wchar.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/wchar.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_mutex.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/pthread.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sched.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/sched.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_clk_tck.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/signal.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/setjmp.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_pthread.h \
+ /root/toolchain/bin/../lib/gcc/mips-linux-gnu/4.7.2/include/stdarg.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/stdio_lim.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/string.h \
+ jpeglib.h jmorecfg.h jerror.h cderror.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/ctype.h \
+ /root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_touplow.h
+
+cdjpeg.h:
+
+jinclude.h:
+
+jconfig.h:
+
+/root/toolchain/bin/../lib/gcc/mips-linux-gnu/4.7.2/include/stddef.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/stdlib.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/features.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_config.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sys/cdefs.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sys/types.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/types.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/wordsize.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/typesizes.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/pthreadtypes.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/endian.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/endian.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/byteswap.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/byteswap.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/byteswap-common.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sgidefs.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/time.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sys/select.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/select.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/sigset.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/time.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sys/sysmacros.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/alloca.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/stdio.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_stdio.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/wchar.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/wchar.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_mutex.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/pthread.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/sched.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/sched.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_clk_tck.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/signal.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/setjmp.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_pthread.h:
+
+/root/toolchain/bin/../lib/gcc/mips-linux-gnu/4.7.2/include/stdarg.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/stdio_lim.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/string.h:
+
+jpeglib.h:
+
+jmorecfg.h:
+
+jerror.h:
+
+cderror.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/ctype.h:
+
+/root/toolchain/bin/../mips-linux-gnu/libc/uclibc/usr/include/bits/uClibc_touplow.h:
