@@ -29,7 +29,7 @@ libgroupsock_VERSION_AGE=1
 libgroupsock_LIB_SUFFIX=so
 
 #####
-
+DESTDIR=$(INSTALLDIR)
 LIBSSL=\$(LIBSSLL)/lib/libssl.a \$(LIBSSLL)/lib/libcrypto.a \$(LIBSSLL)/lib/libtls.a  -pthread 
 OBJ =			o
 COMPILE_OPTS =        \$(INCLUDES) -I\$(LIBSSLL)/include -I. -O3 -DNO_STD_LIB=1 -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64 -DXLOCALE_NOT_USED=1 -DLOCALE_NOT_USED -DBS1 -fPIC -DALLOW_RTSP_SERVER_PORT_REUSE=1 
@@ -60,9 +60,6 @@ EOF
 ./genMakefiles dafang
 make clean
 make
-cp BasicUsageEnvironment/libBasicUsageEnvironment.so ${INSTALLDIR}/lib
-cp UsageEnvironment/libUsageEnvironment.so ${INSTALLDIR}/lib
-cp groupsock/libgroupsock.so ${INSTALLDIR}/lib
-cp liveMedia/libliveMedia.so ${INSTALLDIR}/lib
+make install
 cd ..
 
