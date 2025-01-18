@@ -24,5 +24,5 @@ export LDFLAGS="-muclibc -O3 -L${LIBRARY_PATH} -L${ROOTPATH}/v4l2cpp -lrt -lstdc
 
 rm CMakeCache.txt
 rm -r CMakeFiles
-cmake -DCMAKE_TOOLCHAIN_FILE="./dafang.toolchain"  -DCMAKE_INSTALL_PREFIX=./_install && make VERBOSE=1 -j4 install
+cmake -DCMAKE_TOOLCHAIN_FILE="./dafang.toolchain"  -DCMAKE_INSTALL_PREFIX=../_install && make VERBOSE=1 -j4 install
 make && make install
