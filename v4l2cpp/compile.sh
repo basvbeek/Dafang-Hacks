@@ -22,5 +22,5 @@ export INSTALL=install-sh
 
 rm CMakeCache.txt
 rm -r CMakeFiles
-cmake -DCMAKE_TOOLCHAIN_FILE="./dafang.toolchain"  -DCMAKE_INSTALL_PREFIX=./_install --debug-output && make VERBOSE=1 -j4 install
+cmake -DCMAKE_TOOLCHAIN_FILE="./dafang.toolchain"  -DCMAKE_INSTALL_PREFIX=../_install --debug-output && make VERBOSE=1 -j4
 
