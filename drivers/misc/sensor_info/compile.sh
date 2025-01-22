@@ -21,4 +21,3 @@ export INSTALLDIR=${ROOTPATH}/_install
 export INSTALL=$(pwd)/install-sh
 
 make -j4
-make install
