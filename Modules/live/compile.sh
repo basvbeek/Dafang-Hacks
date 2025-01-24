@@ -29,6 +29,7 @@ libgroupsock_VERSION_AGE=1
 libgroupsock_LIB_SUFFIX=so
 
 #####
+PREFIX=
 DESTDIR=${INSTALLDIR}
 LIBSSL=\$(LIBSSLL)/lib/libssl.a \$(LIBSSLL)/lib/libcrypto.a \$(LIBSSLL)/lib/libtls.a  -pthread 
 OBJ =			o
