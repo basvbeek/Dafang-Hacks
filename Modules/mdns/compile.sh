@@ -11,6 +11,7 @@ VERSION="1096.40.7"
 if [ ! -d "mDNSResponder-${VERSION}/" ]
 then
     wget "https://opensource.apple.com/tarballs/mDNSResponder/mDNSResponder-${VERSION}.tar.gz"
+    mv mDNSResponder-mDNSResponder-1096.40.7/mDNSResponder-1096.40.7 .
     tar xvfz "mDNSResponder-${VERSION}.tar.gz" --exclude='._*'
     rm "mDNSResponder-${VERSION}.tar.gz"
     patch -d "mDNSResponder-${VERSION}/" -p1 <unicast.patch
