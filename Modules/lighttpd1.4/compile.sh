@@ -9,7 +9,7 @@ PCREPATH=${INSTALLDIR}
 
 if [ ! -d lighttpd1.4/.git ]
 then
-   git clone -b lighttpd-1.4.77 https://github.com/lighttpd/lighttpd1.4.git
+   git clone -b lighttpd-1.4.75 https://github.com/lighttpd/lighttpd1.4.git
 fi
 
 cd lighttpd1.4/
