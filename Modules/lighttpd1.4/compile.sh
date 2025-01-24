@@ -9,7 +9,7 @@ PCREPATH=${INSTALLDIR}
 
 if [ ! -d lighttpd1.4/.git ]
 then
-   git clone https://github.com/lighttpd/lighttpd1.4.git
+   git clone -b lighttpd-1.4.75 https://github.com/lighttpd/lighttpd1.4.git
 fi
 
 cd lighttpd1.4/
@@ -20,7 +20,8 @@ export PCRE_LIB=$PCREPATH/lib/libpcre.a
 export CFLAGS="$CFLAGS -DHAVE_PCRE_H=1 -DHAVE_LIBPCRE=1 -I$PCREPATH/include"
 export CPPLAGS="$CFLAGS -DHAVE_PCRE_H=1 -DHAVE_LIBPCRE=1 -I$PCREPATH/include"
  
-LIGHTTPD_STATIC=yes CPPFLAGS=-DLIGHTTPD_STATIC ./configure --prefix=${PWD}/_install --host=mips-linux-gnu --without-mysql --without-zlib --without-bzip2 --disable-ipv6 --enable-static --disable-shared  --with-openssl --with-openssl -with-openssl-includes=$SSLPATH/include --with-openssl-libs=$SSLPATH/lib --with-pcre
+LIGHTTPD_STATIC=yes CPPFLAGS=-DLIGHTTPD_STATIC ./configure --prefix=${PWD}/_install --host=mips-linux-gnu --without-mysql --without-zlib --without-bzip2 --disable-ipv6 --enable-static --disable-shared  --with-openssl --with-openssl -with-openssl-includes=$SSLPATH/include --with-openssl-libs=$SSLPATH/lib --with-pcre \
+   --disable-mod_webdav --without-mod_webdav --enable-mod_webdav=no
 
 echo "PLUGIN_INIT(mod_alias)" > src/plugin-static.h
 echo "PLUGIN_INIT(mod_auth)" >> src/plugin-static.h
