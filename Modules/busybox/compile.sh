@@ -6,7 +6,7 @@ set -e # fail out if any step fails
 
 if [ ! -d busybox/.git ]
 then
-  git clone --depth=1  git://git.busybox.net/busybox
+  git clone --depth=1 -b 1_36_1  git://git.busybox.net/busybox
 fi
 
 cd busybox
@@ -24,7 +24,9 @@ sed -i 's/CONFIG_TRACEROUTE=y/CONFIG_TRACEROUTE=n/' .config
 sed -i 's/CONFIG_TRACEROUTE6=y/CONFIG_TRACEROUTE6=n/' .config
 sed -i 's/CONFIG_TRACEROUTE_VERBOSE=y/CONFIG_TRACEROUTE_VERBOSE=n/' .config
 sed -i 's/CONFIG_TRACEROUTE_USE_ICMP=y/CONFIG_TRACEROUTE_USE_ICMP=n/' .config
+sed -i 's/CONFIG_SEEDRNG=y/CONFIG_SEEDRNG=n/' .config
 sed -i 's/# CONFIG_FLASH_ERASEALL is not set/CONFIG_FLASH_ERASEALL=y/' .config
+
 make CROSS_COMPILE=$CROSS_COMPILE
 
 cp busybox ${INSTALLDIR}/bin
