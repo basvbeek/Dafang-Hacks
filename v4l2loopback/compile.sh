@@ -19,3 +19,5 @@ export INSTALL_MOD_PATH=${INSTALLDIR}
 
 make -j4
 make INSTALL_MOD_PATH=${INSTALLDIR} install
+
+make DESTDIR=${INSTALLDIR} PREFIX="" install-utils
