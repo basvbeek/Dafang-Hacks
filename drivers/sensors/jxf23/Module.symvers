@@ -1,0 +1,2 @@
+0x00000000	math_exp2	/root/drivers/isp/tx-isp/tx-isp	EXPORT_SYMBOL
+0x00000000	log2_fixed_to_fixed	/root/drivers/isp/tx-isp/tx-isp	EXPORT_SYMBOL

@@ -1,0 +1,1 @@
+cmd_/root/drivers/sensors/jxf23/sensor_jxf23.o := /root/toolchain/bin/mips-linux-gnu-ld  -m elf32ltsmip   -r -o /root/drivers/sensors/jxf23/sensor_jxf23.o /root/drivers/sensors/jxf23/*.o /root/drivers/sensors/jxf23/../common/sensor-info.o 
