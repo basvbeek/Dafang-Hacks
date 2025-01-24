@@ -15,6 +15,7 @@ export CROSS_COMPILE=$TOOLCHAIN/mips-linux-gnu-
 export PKG_CONFIG_PATH=$ROOTPATH/_install/lib/pkgconfig
 export LIBRARY_PATH=$ROOTPATH/_install/lib
 export INSTALLDIR=${ROOTPATH}/_install
+export INSTALL_MOD_PATH=${INSTALLDIR}
 
 make -j4
-make install
+make INSTALL_MOD_PATH=${INSTALLDIR} install
