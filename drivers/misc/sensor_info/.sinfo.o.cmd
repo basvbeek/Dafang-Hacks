@@ -1,0 +1,1 @@
+cmd_/root/drivers/misc/sensor_info/sinfo.o := /root/toolchain/bin/mips-linux-gnu-ld -muclibc -O3 -L/root/_install/lib -m elf32ltsmip   -r -o /root/drivers/misc/sensor_info/sinfo.o /root/drivers/misc/sensor_info/sensor_info.o 

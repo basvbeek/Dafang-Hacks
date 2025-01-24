@@ -33,7 +33,7 @@ CMAKE_CXX_COMPILER_AR:FILEPATH=/root/toolchain/bin/mips-linux-gnu-gcc-ar
 CMAKE_CXX_COMPILER_RANLIB:FILEPATH=/root/toolchain/bin/mips-linux-gnu-gcc-ranlib
 
 //Flags used by the compiler during all build types.
-CMAKE_CXX_FLAGS:STRING=-muclibc -O3 -I/root/_install/include
+CMAKE_CXX_FLAGS:STRING=
 
 //Flags used by the compiler during debug builds.
 CMAKE_CXX_FLAGS_DEBUG:STRING=-g
@@ -76,7 +76,7 @@ CMAKE_C_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 CMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
 //Flags used by the linker.
-CMAKE_EXE_LINKER_FLAGS:STRING=-muclibc -O3 -L/root/_install/lib -lstdc++
+CMAKE_EXE_LINKER_FLAGS:STRING=-muclibc -O3 -L/root/_install/lib
 
 //Flags used by the linker during debug builds.
 CMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=
@@ -103,7 +103,7 @@ CMAKE_LINKER:FILEPATH=
 CMAKE_MAKE_PROGRAM:FILEPATH=/usr/bin/make
 
 //Flags used by the linker during the creation of modules.
-CMAKE_MODULE_LINKER_FLAGS:STRING=-muclibc -O3 -L/root/_install/lib -lstdc++
+CMAKE_MODULE_LINKER_FLAGS:STRING=-muclibc -O3 -L/root/_install/lib
 
 //Flags used by the linker during debug builds.
 CMAKE_MODULE_LINKER_FLAGS_DEBUG:STRING=
@@ -133,7 +133,7 @@ CMAKE_PROJECT_NAME:STATIC=IngenicVideoCapture
 CMAKE_RANLIB:FILEPATH=/root/toolchain/bin/mips-linux-gnu-ranlib
 
 //Flags used by the linker during the creation of dll's.
-CMAKE_SHARED_LINKER_FLAGS:STRING=-muclibc -O3 -L/root/_install/lib -lstdc++
+CMAKE_SHARED_LINKER_FLAGS:STRING=-muclibc -O3 -L/root/_install/lib
 
 //Flags used by the linker during debug builds.
 CMAKE_SHARED_LINKER_FLAGS_DEBUG:STRING=

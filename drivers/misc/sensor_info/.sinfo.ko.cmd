@@ -1,0 +1,1 @@
+cmd_/root/drivers/misc/sensor_info/sinfo.ko := /root/toolchain/bin/mips-linux-gnu-ld -r -muclibc -O3 -L/root/_install/lib -m elf32ltsmip -T /root/kernel/scripts/module-common.lds --build-id  -o /root/drivers/misc/sensor_info/sinfo.ko /root/drivers/misc/sensor_info/sinfo.o /root/drivers/misc/sensor_info/sinfo.mod.o

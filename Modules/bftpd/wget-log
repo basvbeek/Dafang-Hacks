@@ -1,0 +1,16 @@
+--2025-01-14 18:20:18--  https://downloads.sourceforge.net/project/bftpd/bftpd/bftpd-6.2/bftpd-6.2.tar.gz?ts=gAAAAABnhqrTyeLUFbZNOKtfLafCMsuQlTrftntFiILwHuQPZG8CIg3U7zm6brK7BL5yR0IMzcZAe7N3hAqx9fYAINganJLHVw%3D%3D
+Resolving downloads.sourceforge.net (downloads.sourceforge.net)... 104.18.12.149, 104.18.13.149, 2606:4700::6812:d95, ...
+Connecting to downloads.sourceforge.net (downloads.sourceforge.net)|104.18.12.149|:443... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://unlimited.dl.sourceforge.net/project/bftpd/bftpd/bftpd-6.2/bftpd-6.2.tar.gz?viasf=1 [following]
+--2025-01-14 18:20:18--  https://unlimited.dl.sourceforge.net/project/bftpd/bftpd/bftpd-6.2/bftpd-6.2.tar.gz?viasf=1
+Resolving unlimited.dl.sourceforge.net (unlimited.dl.sourceforge.net)... 185.119.90.247
+Connecting to unlimited.dl.sourceforge.net (unlimited.dl.sourceforge.net)|185.119.90.247|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 191944 (187K) [application/x-gzip]
+Saving to: 'bftpd-6.2.tar.gz?ts=gAAAAABnhqrTyeLUFbZNOKtfLafCMsuQlTrftntFiILwHuQPZG8CIg3U7zm6brK7BL5yR0IMzcZAe7N3hAqx9fYAINganJLHVw=='
+
+                       bftpd-6.2.tar.gz?ts=gAA   0%[                                                                                                    ]       0  --.-KB/s                                     bftpd-6.2.tar.gz?ts=gAAA  38%[=====================================>                                                              ]  71.77K  20.9KB/s    eta 6s     bftpd-6.2.tar.gz?ts=gAAAAABnhqrTyeLUFbZNOKtfLa 100%[===================================================================================================>] 187.45K  53.2KB/s    in 3.5s    
+
+2025-01-14 18:20:33 (53.2 KB/s) - 'bftpd-6.2.tar.gz?ts=gAAAAABnhqrTyeLUFbZNOKtfLafCMsuQlTrftntFiILwHuQPZG8CIg3U7zm6brK7BL5yR0IMzcZAe7N3hAqx9fYAINganJLHVw==' saved [191944/191944]
+

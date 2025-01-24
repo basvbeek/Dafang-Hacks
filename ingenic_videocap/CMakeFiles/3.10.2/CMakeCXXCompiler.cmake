@@ -70,6 +70,6 @@ endif()
 
 
 
-set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "stdc++;stdc++;m;gcc_s;gcc;c;gcc_s;gcc")
+set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "stdc++;m;gcc_s;gcc;c;gcc_s;gcc")
 set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "/root/_install/lib;/root/toolchain/lib/gcc/mips-linux-gnu/4.7.2/uclibc;/root/toolchain/mips-linux-gnu/lib/uclibc;/root/toolchain/lib/gcc/mips-linux-gnu/4.7.2;/root/toolchain/lib/gcc;/root/toolchain/mips-linux-gnu/lib;/root/toolchain/mips-linux-gnu/libc/uclibc/lib;/root/toolchain/mips-linux-gnu/libc/uclibc/usr/lib")
 set(CMAKE_CXX_IMPLICIT_LINK_FRAMEWORK_DIRECTORIES "")
