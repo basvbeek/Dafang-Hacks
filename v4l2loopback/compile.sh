@@ -14,11 +14,7 @@ export AR=${TOOLCHAIN}/${CROSS_PREFIX}ar
 export CROSS_COMPILE=$TOOLCHAIN/mips-linux-gnu-
 export PKG_CONFIG_PATH=$ROOTPATH/_install/lib/pkgconfig
 export LIBRARY_PATH=$ROOTPATH/_install/lib
-# export CFLAGS="-muclibc -O3 -lrt -I../_install/include/ ${NO_MOTION_SYSTEM_CALLS}"
-# export CPPFLAGS="-muclibc -O3 -lrt -I../_install/include/ -std=c++11 ${NO_MOTION_SYSTEM_CALLS}"
-# export LDFLAGS="-muclibc -O3 -L${LIBRARY_PATH}"
 export INSTALLDIR=${ROOTPATH}/_install
-#export INSTALL=install-sh
 
 make -j4
 make install

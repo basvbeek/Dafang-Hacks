@@ -18,31 +18,9 @@ only be of limited use...
 
 # ISSUES
 for current issues, checkout https://github.com/umlaeute/v4l2loopback/issues
-please use the issue-tracker for reporting any problems.
-
-before you create a new ticket in our issue tracker, please make sure that you have read
-*this* document and followed any instructions found within.
-
-also, please search the issue-tracker *before* reporting any problems: it's much better
-to add your information to an existing ticket than to create a new ticket with essentially
-the same information.
-
-## SEEKING HELP
-the issue tracker is meant to track specific bugs in the code (and new features).
-however, it is ill-suited as a user support forum.
-
-if you have general questions or problems, please use the `v4l2loopback` tag
-on [Stack Overflow](https://stackoverflow.com/questions/tagged/v4l2loopback) instead:
-https://stackoverflow.com/questions/tagged/v4l2loopback
-
+please use the issue-tracker for reporting any problems
 
 # DEPENDENCIES
-in order to build (compile,...) anything, you must have a *working* build-environment
-(compiler, GNU make,...).
-the kernel can be somewhat picky if you try to load a module that was compiled with
-a different compiler than was used to compile the kernel itself.
-so make sure to have the right compiler in place.
-
 the v4l2loopback module is a *kernel module*.
 in order to build it, you *must have* the kernel headers installed that match
 the linux kernel with which you want to use the module (in most cases this will
@@ -53,26 +31,12 @@ the first few number are the same.
 (modules will be incompatible if the versions don't match. if you are lucky, the module will
 simply refuse to load. if you are unlucky, your computer will spit in your eye or do worse.)
 
-there are distribution-specific differences on how to get the correct kernel headers
-(or to install a compilation toolchain).
-documenting all those possibilities would go far beyond the scope of `v4l2loopback`.
-please understnd that we cannot provide support for questions regarding dependencies.
-
-
 # BUILD
 to build the kernel module run:
 
     $ make
 
 this should give you a file named "v4l2loopback.ko", which is the kernel module
-
-## BUILD AGAIN
-you cannot load a module built for a specific version of the kernel into another version of the kernel.
-so, if you have successfully built the module previously and have updated your kernel (and the matching headers)
-in the meantime, you really must clean the build before re-compiling the module.
-So run this *before* starting the build again:
-
-    $ make clean
 
 # INSTALL
 to install the module run "make install" (you might have to be 'root' to have
@@ -97,10 +61,6 @@ if your system lacks "sudo", do:
 automatically load additional kernel modules required by v4l2loopback.
 The call may not be necessary on modern systems.)
 
-See below for [distribution-specific build instructions](#DISTRIBUTIONS)
-or when using frameworks like [`DKMS`](#DKMS).
-
-
 # RUN
 load the v4l2loopback module as root :
 
@@ -114,7 +74,7 @@ this will create an additional video-device, e.g. /dev/video0 (the number
 depends on whether you already had video devices on your system), which can be
 fed by various programs.
 tested feeders:
-- GStreamer-1.0: using the  "v4l2sink" element
+- GStreamer-0.10: using the  "v4l2sink" element
 - Gem(>=0.93) using the "recordV4L2" plugin
 in theory most programs capable of _writing to_ a v4l2 device should work.
 
@@ -123,17 +83,6 @@ application.
 
 you can find a number of scenarios on the wiki at
 	http://github.com/umlaeute/v4l2loopback/wiki
-
-## Troubleshooting
-if you have a secure-boot enabled kernel, you might not be able to simply build a kernel module and insert it.
-this is actually a security feature (as it prevents malicious code to be inserted into kernel-space).
-
-if you are not allowed to insert the kernel module (running `modprobe`, or `insmod`), you have a few options
-(consult your distribution's documentation on how to perform any of these steps)_
-- disable secure-boot and reboot
-- sign the module binary with a whitelisted key (this probably only applies if you are creating a distribution)
-
-you could also just try building the module [via `DKMS`](#DKMS), and hope that it does all the magic for you.
 
 # OPTIONS
 if you need several independent loopback devices, you can pass the "devices"
@@ -201,7 +150,7 @@ or
 $ v4l2-ctl -d /dev/video0 -c timeout=3000
 (will output null frames by default)
 $ v4l2loopback-ctl set-timeout-image service-unavailable.png /dev/video0
-this currently requires GStreamer 1.0 installed
+this currently requires GStreamer 0.10 installed
 ~~~
 
 # KERNELs
@@ -235,67 +184,6 @@ in this case you should be able to simply do (as root):
 
     # aptitude install v4l2loopback-source module-assistant
     # module-assistant auto-install v4l2loopback-source
-
-# DKMS
-the *Dynamic Kernel Module Support framework* (DKMS) is designed to allow
-individual kernel modules to be upgraded without changing the whole kernel.
-it is also very easy to rebuild modules as you upgrade kernels.
-
-if your distribution doesn't provide `v4l2loopback`-packages (or they are too old)
-and you are experiencing troubles with code-signing, you probably should try this.
-
-e.g. to build the v4l2loopback-v0.12.5 (but check the webpage for newer releases first!),
-use something like the following (you might need to run the `dkms` commands as superuser/root):
-
-~~~
-mkdir -p ~/src/
-cd ~/src/
-version=0.12.5
-# download and extract the tarball
-curl -L https://github.com/umlaeute/v4l2loopback/archive/v${version}.tar.gz | tar xvz
-# build and install the DKMS-module (requires superuser privileges)
-dkms add -m v4l2loopback -v ${version}
-dkms build -m v4l2loopback -v ${version}
-dkms install -m v4l2loopback -v ${version}
-~~~~
-
-| distribution       | dependencies          |
-|--------------------|-----------------------|
-| Fedora,...         | gcc kernel-devel dkms |
-| Debian, Ubuntu,... | dkms                  |
-
-
-# LOAD THE MODULE AT BOOT
-
-one can avoid manually loading the module by letting systemd load the module
-at boot, by creating a file `/etc/modules-load.d/v4l2loopback.conf` with just
-the name of the module:
-
-~~~
-v4l2loopback
-~~~
-
-this is especially convenient when `v4l2loopback` is installed with DKMS or with
-a package provided by your Linux distribution.
-
-if needed, one can specify default module options by creating
-`/etc/modprobe.d/v4l2loopback.conf` in the following form:
-
-~~~
-options v4l2loopback video_nr=3,4,7
-options v4l2loopback card_label="device number 3,the number four,the last one"
-~~~
-
-one can only add one option per line. these options also become the defaults when
-manually calling `modprobe v4l2loopback`. note that the double quotes can only
-be used at the beginning and the end of the option's value, as opposed to when
-they are specified on the command line.
-
-if your system boots with an initial ramdisk, which is the case for most
-modern distributions, you need to update this ramdisk with the settings above,
-before they take effect at boot time. on Ubuntu, this image is updated with
-`sudo update-initramfs`. the equivalent on Fedora is `sudo dracut -f`.
-
 
 # DOWNLOAD
 the most up-to-date version of this module can be found at
