@@ -75,9 +75,9 @@ void V4l2Device::queryFormat()
 // intialize the V4L2 connection
 bool V4l2Device::init(unsigned int mandatoryCapabilities)
 {
-        struct stat sb;
-        if ( (stat(m_params.m_devName.c_str(), &sb)==0) && ((sb.st_mode & S_IFMT) == S_IFCHR) )
-        {
+	struct stat sb;
+	if ( (stat(m_params.m_devName.c_str(), &sb)==0) && ((sb.st_mode & S_IFMT) == S_IFCHR) )
+	{
 		if (initdevice(m_params.m_devName.c_str(), mandatoryCapabilities) == -1)
 		{
 			LOG(ERROR) << "Cannot init device:" << m_params.m_devName;
@@ -85,8 +85,8 @@ bool V4l2Device::init(unsigned int mandatoryCapabilities)
 	}
 	else
 	{
-                // open a normal file
-                m_fd = open(m_params.m_devName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+		// open a normal file
+		m_fd = open(m_params.m_devName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
 	}
 	return (m_fd!=-1);
 }
@@ -130,15 +130,15 @@ int V4l2Device::checkCapabilities(int fd, unsigned int mandatoryCapabilities)
 		LOG(ERROR) << "Cannot get capabilities for device:" << m_params.m_devName << " " << strerror(errno);
 		return -1;
 	}
-	LOG(NOTICE) << "driver:" << cap.driver << " capabilities:" << std::hex << cap.capabilities <<  " mandatory:" << mandatoryCapabilities << std::dec;
+	LOG(INFO) << "driver:" << cap.driver << " capabilities:" << std::hex << cap.capabilities <<  " mandatory:" << mandatoryCapabilities << std::dec;
 		
-	if ((cap.capabilities & V4L2_CAP_VIDEO_OUTPUT))  LOG(NOTICE) << m_params.m_devName << " support output";
-	if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) LOG(NOTICE) << m_params.m_devName << " support capture";
+	if ((cap.capabilities & V4L2_CAP_VIDEO_OUTPUT))  LOG(DEBUG) << m_params.m_devName << " support output";
+	if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) LOG(DEBUG) << m_params.m_devName << " support capture";
 
-	if ((cap.capabilities & V4L2_CAP_READWRITE))     LOG(NOTICE) << m_params.m_devName << " support read/write";
-	if ((cap.capabilities & V4L2_CAP_STREAMING))     LOG(NOTICE) << m_params.m_devName << " support streaming";
+	if ((cap.capabilities & V4L2_CAP_READWRITE))     LOG(DEBUG) << m_params.m_devName << " support read/write";
+	if ((cap.capabilities & V4L2_CAP_STREAMING))     LOG(DEBUG) << m_params.m_devName << " support streaming";
 
-	if ((cap.capabilities & V4L2_CAP_TIMEPERFRAME))  LOG(NOTICE) << m_params.m_devName << " support timeperframe"; 
+	if ((cap.capabilities & V4L2_CAP_TIMEPERFRAME))  LOG(DEBUG) << m_params.m_devName << " support timeperframe"; 
 	
 	if ( (cap.capabilities & mandatoryCapabilities) != mandatoryCapabilities )
 	{
@@ -187,8 +187,8 @@ int V4l2Device::configureFormat(int fd, unsigned int format, unsigned int width,
 	struct v4l2_format   fmt;			
 	memset(&(fmt), 0, sizeof(fmt));
 	fmt.type                = m_deviceType;
-        if (ioctl(m_fd,VIDIOC_G_FMT,&fmt) == -1)
-        {
+	if (ioctl(m_fd,VIDIOC_G_FMT,&fmt) == -1)
+	{
 		LOG(ERROR) << m_params.m_devName << ": Cannot get format " << strerror(errno);
 		return -1;
 	}
@@ -222,7 +222,7 @@ int V4l2Device::configureFormat(int fd, unsigned int format, unsigned int width,
 	m_height     = fmt.fmt.pix.height;		
 	m_bufferSize = fmt.fmt.pix.sizeimage;
 	
-	LOG(NOTICE) << m_params.m_devName << ":" << fourcc(m_format) << " size:" << m_width << "x" << m_height << " bufferSize:" << m_bufferSize;
+	LOG(INFO) << m_params.m_devName << ":" << fourcc(m_format) << " size:" << m_width << "x" << m_height << " bufferSize:" << m_bufferSize;
 	
 	return 0;
 }
@@ -243,8 +243,8 @@ int V4l2Device::configureParam(int fd, int fps)
 			LOG(WARN) << "Cannot set param for device:" << m_params.m_devName << " " << strerror(errno);
 		}
 	
-		LOG(NOTICE) << "fps:" << param.parm.capture.timeperframe.numerator << "/" << param.parm.capture.timeperframe.denominator;
-		LOG(NOTICE) << "nbBuffer:" << param.parm.capture.readbuffers;
+		LOG(INFO) << "fps:" << param.parm.capture.timeperframe.numerator << "/" << param.parm.capture.timeperframe.denominator;
+		LOG(INFO) << "nbBuffer:" << param.parm.capture.readbuffers;
 	}
 	
 	return 0;

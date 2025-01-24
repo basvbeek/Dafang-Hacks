@@ -10,8 +10,7 @@
 ** -------------------------------------------------------------------------*/
 
 
-#ifndef V4L2_DEVICE
-#define V4L2_DEVICE
+#pragma once
 
 #include <string>
 #include <list>
@@ -39,11 +38,11 @@ enum V4l2IoType
 // ---------------------------------
 struct V4L2DeviceParameters 
 {
-	V4L2DeviceParameters(const char* devname, const std::list<unsigned int> & formatList, unsigned int width, unsigned int height, int fps, V4l2IoType ioType = IOTYPE_MMAP, int verbose = 0, int openFlags = O_RDWR | O_NONBLOCK) : 
-		m_devName(devname), m_formatList(formatList), m_width(width), m_height(height), m_fps(fps), m_iotype(ioType), m_verbose(verbose), m_openFlags(openFlags) {}
+	V4L2DeviceParameters(const char* devname, const std::list<unsigned int> & formatList, unsigned int width, unsigned int height, int fps, V4l2IoType ioType = IOTYPE_MMAP, int openFlags = O_RDWR | O_NONBLOCK) : 
+		m_devName(devname), m_formatList(formatList), m_width(width), m_height(height), m_fps(fps), m_iotype(ioType), m_openFlags(openFlags) {}
 
-	V4L2DeviceParameters(const char* devname, unsigned int format, unsigned int width, unsigned int height, int fps, V4l2IoType ioType = IOTYPE_MMAP, int verbose = 0, int openFlags = O_RDWR | O_NONBLOCK) : 
-		m_devName(devname), m_width(width), m_height(height), m_fps(fps), m_iotype(ioType), m_verbose(verbose), m_openFlags(openFlags) {
+	V4L2DeviceParameters(const char* devname, unsigned int format, unsigned int width, unsigned int height, int fps, V4l2IoType ioType = IOTYPE_MMAP, int openFlags = O_RDWR | O_NONBLOCK) : 
+		m_devName(devname), m_width(width), m_height(height), m_fps(fps), m_iotype(ioType), m_openFlags(openFlags) {
 			if (format) {
 				m_formatList.push_back(format);
 			}
@@ -54,9 +53,9 @@ struct V4L2DeviceParameters
 	unsigned int m_width;
 	unsigned int m_height;
 	int m_fps;			
+	V4l2IoType m_iotype;
 	int m_verbose;
 	int m_openFlags;
-	V4l2IoType m_iotype;
 };
 
 // ---------------------------------
@@ -76,12 +75,12 @@ class V4l2Device
 		int configureFormat(int fd, unsigned int format, unsigned int width, unsigned int height);
 		int configureParam(int fd, int fps);
 
-		virtual bool init(unsigned int mandatoryCapabilities);		
-		virtual size_t writeInternal(char*, size_t) { return -1; }
-		virtual bool startPartialWrite(void)        { return false; }
-		virtual size_t writePartialInternal(char*, size_t) { return -1; }
-		virtual bool endPartialWrite(void)          { return false; }
-		virtual size_t readInternal(char*, size_t)  { return -1; }
+		virtual bool   init(unsigned int mandatoryCapabilities);		
+		virtual size_t writeInternal(char*, size_t)        { return -1;    }
+		virtual bool   startPartialWrite()                 { return false; }
+		virtual size_t writePartialInternal(char*, size_t) { return -1;    }
+		virtual bool   endPartialWrite()                   { return false; }
+		virtual size_t readInternal(char*, size_t)         { return -1;    }
 	
 	public:
 		V4l2Device(const V4L2DeviceParameters&  params, v4l2_buf_type deviceType);		
@@ -95,8 +94,9 @@ class V4l2Device
 		unsigned int getFormat()     { return m_format;     }
 		unsigned int getWidth()      { return m_width;      }
 		unsigned int getHeight()     { return m_height;     }
-		int getFd()         { return m_fd;         }
-		void queryFormat();	
+		int          getFd()         { return m_fd;         }
+		void         queryFormat();
+			
 		int setFormat(unsigned int format, unsigned int width, unsigned int height) {
 			return this->configureFormat(m_fd, format, width, height);
 		}
@@ -122,4 +122,3 @@ class V4l2Device
 };
 
 
-#endif

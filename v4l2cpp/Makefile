@@ -123,6 +123,46 @@ v4l2cpp/fast:
 	$(MAKE) -f CMakeFiles/v4l2cpp.dir/build.make CMakeFiles/v4l2cpp.dir/build
 .PHONY : v4l2cpp/fast
 
+#=============================================================================
+# Target rules for targets named v4l2cpptest
+
+# Build rule for target.
+v4l2cpptest: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 v4l2cpptest
+.PHONY : v4l2cpptest
+
+# fast build rule for target.
+v4l2cpptest/fast:
+	$(MAKE) -f CMakeFiles/v4l2cpptest.dir/build.make CMakeFiles/v4l2cpptest.dir/build
+.PHONY : v4l2cpptest/fast
+
+main.o: main.cpp.o
+
+.PHONY : main.o
+
+# target to build an object file
+main.cpp.o:
+	$(MAKE) -f CMakeFiles/v4l2cpptest.dir/build.make CMakeFiles/v4l2cpptest.dir/main.cpp.o
+.PHONY : main.cpp.o
+
+main.i: main.cpp.i
+
+.PHONY : main.i
+
+# target to preprocess a source file
+main.cpp.i:
+	$(MAKE) -f CMakeFiles/v4l2cpptest.dir/build.make CMakeFiles/v4l2cpptest.dir/main.cpp.i
+.PHONY : main.cpp.i
+
+main.s: main.cpp.s
+
+.PHONY : main.s
+
+# target to generate assembly for a file
+main.cpp.s:
+	$(MAKE) -f CMakeFiles/v4l2cpptest.dir/build.make CMakeFiles/v4l2cpptest.dir/main.cpp.s
+.PHONY : main.cpp.s
+
 src/V4l2Access.o: src/V4l2Access.cpp.o
 
 .PHONY : src/V4l2Access.o
@@ -321,6 +361,10 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... v4l2cpp"
 	@echo "... edit_cache"
+	@echo "... v4l2cpptest"
+	@echo "... main.o"
+	@echo "... main.i"
+	@echo "... main.s"
 	@echo "... src/V4l2Access.o"
 	@echo "... src/V4l2Access.i"
 	@echo "... src/V4l2Access.s"

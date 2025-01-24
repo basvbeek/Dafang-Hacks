@@ -46,7 +46,7 @@ V4l2MmapDevice::~V4l2MmapDevice()
 
 bool V4l2MmapDevice::start() 
 {
-	LOG(NOTICE) << "Device " << m_params.m_devName;
+	LOG(INFO) << "Device " << m_params.m_devName;
 
 	bool success = true;
 	struct v4l2_requestbuffers req;
@@ -70,7 +70,7 @@ bool V4l2MmapDevice::start()
 	}
 	else
 	{
-		LOG(NOTICE) << "Device " << m_params.m_devName << " nb buffer:" << req.count;
+		LOG(INFO) << "Device " << m_params.m_devName << " nb buffer:" << req.count;
 		
 		// allocate buffers
 		memset(&m_buffer,0, sizeof(m_buffer));
@@ -138,7 +138,7 @@ bool V4l2MmapDevice::start()
 
 bool V4l2MmapDevice::stop() 
 {
-	LOG(NOTICE) << "Device " << m_params.m_devName;
+	LOG(INFO) << "Device " << m_params.m_devName;
 
 	bool success = true;
 	
@@ -186,8 +186,12 @@ size_t V4l2MmapDevice::readInternal(char* buffer, size_t bufferSize)
 
 		if (-1 == ioctl(m_fd, VIDIOC_DQBUF, &buf)) 
 		{
-			perror("VIDIOC_DQBUF");
-			size = -1;
+			if (errno == EAGAIN) {
+				size = 0;
+			} else {
+				perror("VIDIOC_DQBUF");
+				size = -1;
+			}
 		}
 		else if (buf.index < n_buffers)
 		{
@@ -245,7 +249,7 @@ size_t V4l2MmapDevice::writeInternal(char* buffer, size_t bufferSize)
 	return size;
 }
 
-bool V4l2MmapDevice::startPartialWrite(void)
+bool V4l2MmapDevice::startPartialWrite()
 {
 	if (n_buffers <= 0)
 		return false;
@@ -287,7 +291,7 @@ size_t V4l2MmapDevice::writePartialInternal(char* buffer, size_t bufferSize)
 	return size;
 }
 
-bool V4l2MmapDevice::endPartialWrite(void)
+bool V4l2MmapDevice::endPartialWrite()
 {
 	if (!m_partialWriteInProgress)
 		return false;

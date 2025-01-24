@@ -12,13 +12,13 @@ V4L2 Capture
 -------------
  - create a V4L2 Capture interface using MMAP interface:
 
-         V4L2DeviceParameters param("/dev/video0", V4L2_PIX_FMT_*, width, height, fps, IOTYPE_MMAP, verbose);
+         V4L2DeviceParameters param("/dev/video0", V4L2_PIX_FMT_*, width, height, fps, IOTYPE_MMAP);
          V4l2Capture* videoCapture = V4l2Capture::create(param);
 
  - data are available :
 
          timeval timeout; 
-         bool isReadable = (videoCapture->isReadable(&timeout) == 1);
+         bool isReadable = videoCapture->isReadable(&timeout);
 
  - read data :
 
@@ -30,13 +30,13 @@ V4L2 Output
 
  - To create a V4L2 Output interface using MMAP interface:
 
-         V4L2DeviceParameters param("/dev/video0", V4L2_PIX_FMT_*, width, height, fps, IOTYPE_MMAP, verbose);
+         V4L2DeviceParameters param("/dev/video0", V4L2_PIX_FMT_*, width, height, fps, IOTYPE_MMAP);
          V4l2Output* videoOutput = V4l2Output::create(param);
 
  - data could be written :
 
          timeval timeout; 
-         bool isWritable = (videoOutput->isWritable(&timeout) == 1);
+         bool isWritable = videoOutput->isWritable(&timeout);
 
  - write data :
 

@@ -57,7 +57,7 @@
 // -----------------------------------------
 //    signal handler
 // -----------------------------------------
-char quit = 0;
+EventLoopWatchVariable quit = 0;
 
 void sighandler(int n) {
     LOG_S(ERROR) << "SIGINT";
@@ -655,7 +655,7 @@ int main(int argc, char **argv, char**environ) {
 		    nbSource += addSession(rtspServer, baseUrl+tsurl, subSession);
 
 		    struct in_addr ip;
-		    ip.s_addr = ourIPAddress(*env);
+		    ip.s_addr = ourIPv4Address(*env);
 		    LOG_S(INFO) << "HLS       http://" << inet_ntoa(ip) << ":" << rtspPort << "/" << baseUrl+tsurl << ".m3u8";
 		    LOG_S(INFO) << "MPEG-DASH http://" << inet_ntoa(ip) << ":" << rtspPort << "/" << baseUrl+tsurl << ".mpd";
 

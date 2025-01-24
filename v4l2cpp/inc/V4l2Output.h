@@ -10,8 +10,7 @@
 ** -------------------------------------------------------------------------*/
 
 
-#ifndef V4L2_OUTPUT
-#define V4L2_OUTPUT
+#pragma once
 
 #include "V4l2Access.h"
 
@@ -21,17 +20,16 @@
 class V4l2Output : public V4l2Access
 {		
 	protected:
-		V4l2Output(V4l2Device* device);
+		explicit V4l2Output(V4l2Device* device);
 
 	public:
 		static V4l2Output* create(const V4L2DeviceParameters & param);
 		virtual ~V4l2Output();
 	
 		size_t write(char* buffer, size_t bufferSize);
-		int    isWritable(timeval* tv);
-		bool   startPartialWrite(void);
+		bool   isWritable(timeval* tv);
+		bool   startPartialWrite();
 		size_t writePartial(char* buffer, size_t bufferSize);
-		bool   endPartialWrite(void);
+		bool   endPartialWrite();
 };
 
-#endif

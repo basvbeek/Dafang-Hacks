@@ -5,7 +5,7 @@ get_filename_component(BASENAME ${CMAKE_SOURCE_DIR} NAME)
 project(${BASENAME})
 
 set(CMAKE_C_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -O3")
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -O3 -DNO_STD_LIB")
 
 
 # define executable to build
@@ -20,17 +20,16 @@ if (COVERAGE)
 	target_link_libraries(${PROJECT_NAME} gcov)
 endif()
 
-# v4l2wrapper
-include_directories("v4l2wrapper/inc")
-find_library(V4L2WRAPPER_LIBRARY libv4l2wrapper.a PATHS "." NO_CMAKE_FIND_ROOT_PATH)
-if (NOT V4L2WRAPPER_LIBRARY)
-        message(STATUS "Installing v4l2wrapper")
-        EXEC_PROGRAM("git submodule init && git submodule update && make -C v4l2wrapper CC=${CMAKE_C_COMPILER} CFLAGS_EXTRA=--sysroot=${CMAKE_FIND_ROOT_PATH} && cp v4l2wrapper/libv4l2wrapper.a . && make -C v4l2wrapper clean")
-	find_library(V4L2WRAPPER_LIBRARY libv4l2wrapper.a PATHS "." NO_CMAKE_FIND_ROOT_PATH)
-        message(STATUS "v4l2wrapper built in V4L2WRAPPER_LIBRARY=${V4L2WRAPPER_LIBRARY}")
-endif (NOT V4L2WRAPPER_LIBRARY)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${V4L2WRAPPER_LIBRARY})
-
+# libv4l2cpp
+include_directories(../v4l2cpp/inc)
+find_library(V4L2CPP_LIBRARY libv4l2cpp.a PATHS "." NO_CMAKE_FIND_ROOT_PATH)
+if (NOT V4L2CPP_LIBRARY)
+        message(STATUS "Installing libv4l2cpp")
+        EXEC_PROGRAM("cd ../v4l2cpp && cmake . && make VERBOSE=1 -j4 && cp libv4l2cpp.a ${CMAKE_SOURCE_DIR} && make clean")
+        find_library(V4L2CPP_LIBRARY libv4l2cpp.a PATHS "." NO_CMAKE_FIND_ROOT_PATH)
+        message(STATUS "libv4l2cpp built in V4L2CPP_LIBRARY=${V4L2CPP_LIBRARY}")
+endif (NOT V4L2CPP_LIBRARY)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${V4L2CPP_LIBRARY})
 
 #pthread
 find_package (Threads)
@@ -40,8 +39,8 @@ target_link_libraries (${PROJECT_NAME} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 #target_link_libraries (${PROJECT_NAME} PUBLIC ${ALSA_LIBRARY})
 
 
-find_path(LIBLIVE555_INCLUDE_DIR liveMedia/liveMedia.hh)
-include_directories(../live555/liveMedia/include)
+#find_path(LIBLIVE555_INCLUDE_DIR liveMedia/liveMedia.hh)
+#include_directories(../live555/liveMedia/include)
 #include_directories(/src/tmp/Xiaomi-Dafang-Software/live/liveMedia/include)
 
 
@@ -52,7 +51,6 @@ target_link_libraries(${PROJECT_NAME} sharedmem)
 include_directories("filter")
 add_library(filter filter/g711super.c  filter/noise_remover.c  filter/wave.c filter/mylog.c)
 target_link_libraries(${PROJECT_NAME} filter)
-
 
 #include_directories(../live/liveMedia/)
 foreach (LIBLIVE555_module groupsock liveMedia UsageEnvironment BasicUsageEnvironment)
@@ -87,7 +85,7 @@ foreach (LIB ${DEPENDLIBS})
 #    install(FILES ${LIB} DESTINATION libs NAMELINK_ONLY)
 endforeach (LIB)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libv4l2wrapper.a")
+target_link_libraries(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libv4l2cpp.a")
 target_link_libraries(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libfilter.a")
 target_link_libraries(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../_install/lib/libfreetype.a")
 target_link_libraries(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../_install/lib/libmp3lame.a")

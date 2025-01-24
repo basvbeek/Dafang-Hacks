@@ -20,7 +20,7 @@ The RTSP server support :
 - RTP/TCP
 - RTP/RTSP/HTTP
 
-The HTTP server support :
+The HTTP server support (available using -S option for capture format that could be muxed in Transport Stream):
 - HLS
 - MPEG-DASH
 
@@ -29,6 +29,9 @@ Dependencies
  - liblivemedia-dev [License LGPL](http://www.live555.com/liveMedia/) > live.2012.01.07 (need StreamReplicator)
  - libv4l2cpp [Unlicense](https://github.com/mpromonet/libv4l2cpp/blob/master/LICENSE)
  - liblog4cpp5-dev  [License LGPL](http://log4cpp.sourceforge.net/#license) (optional)
+If liblog4cpp5-dev is not present, a simple log using std::cout is used.
+ - libasound2-dev Licence LGPL (optional)
+If libasound2-dev is not present in the build environment, there will have no audio support.
 
 Usage
 -----
@@ -51,12 +54,12 @@ Usage
 		 -M addr  : multicast group:port (default is random_address:20000)
 		 -c       : don't repeat config (default repeat config before IDR frame)
 		 -t secs  : RTCP expiration timeout (default 65)
-		 -T       : send Transport Stream instead of elementary Stream
 		 -S[secs] : HTTP segment duration (enable HLS & MPEG-DASH)
 		 
 		 V4L2 options :
 		 -r       : V4L2 capture using read interface (default use memory mapped buffers)
 		 -w       : V4L2 capture using write interface (default use memory mapped buffers)
+		 -B       : V4L2 capture using blocking mode (default use non-blocking mode)
 		 -s       : V4L2 capture using live555 mainloop (default use a separated reading thread)
 		 -f       : V4L2 capture using current capture format (-W,-H are ignored)
 		 -fformat : V4L2 capture using format (-W,-H are used)

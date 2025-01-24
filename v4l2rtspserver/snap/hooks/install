@@ -1,4 +1,0 @@
-#!/bin/sh -e
-
-snapctl set rtsp-port=554
-snapctl set devices=/dev/video0
