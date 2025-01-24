@@ -20,7 +20,7 @@ export PKG_CONFIG_PATH=$ROOTPATH/_install/lib/pkgconfig
 export LIBRARY_PATH=$ROOTPATH/_install/lib
 export CFLAGS="-muclibc -O3 -lrt -I../_install/include/ ${NO_MOTION_SYSTEM_CALLS}"
 export CPPFLAGS="-muclibc -O3 -lrt -I../_install/include/ -std=c++11 ${NO_MOTION_SYSTEM_CALLS}"
-export LDFLAGS="-muclibc -O3 -L${LIBRARY_PATH} -lstdc++"
+export LDFLAGS="-muclibc -O3 -L${LIBRARY_PATH}"
 #export LDFLAGS="-muclibc -O3 -L${LIBRARY_PATH} -lrt -lstdc++ -lpthread -ldl -lmosquitto -lssl -ltls -lcrypto"
 rm CMakeCache.txt
 rm -r CMakeFiles
@@ -30,7 +30,7 @@ err=$?
 if [ $err != 0 ]; then
     exit $err
 else
-    ${CROSS_COMPILE}strip -s _install/bin/*
+    #${CROSS_COMPILE}strip -s _install/bin/*
     cp v4l2rtspserver-master.ini _install/bin/
 
     echo '-------------------------------------------------------'
