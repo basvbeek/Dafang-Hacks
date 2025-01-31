@@ -1,0 +1,10 @@
+prefix=/github/home/output/toolchain_xburst1_musl_gcc14/host
+sysconfdir=/github/home/output/toolchain_xburst1_musl_gcc14/host/etc
+distconfdir=${prefix}/lib
+module_directory=/lib/modules
+module_compressions=
+module_signatures=legacy
+
+Name: kmod
+Description: Tools to deal with kernel modules
+Version: 33

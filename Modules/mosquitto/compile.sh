@@ -5,9 +5,9 @@ set -e # fail out if any step fails
 . ../../setCompilePath.sh
 
 export CROSS_COMPILE=${ROOTPATH}/toolchain
-export CC=/bin/mips-linux-gnu-gcc
-export AR=/bin/mips-linux-gnu-ar
-export CXX=/bin/mips-linux-gnu-g++
+export CC=/bin/mipsel-linux-gcc
+export AR=/bin/mipsel-linux-ar
+export CXX=/bin/mipsel-linux-g++
 export LDFLAGS="${LDFLAGS} -lrt -lssl -ltls -lcrypto -lpthread"
 
 if [ ! -d mosquitto/.git ]

@@ -1,4 +1,4 @@
-CROSS_COMPILE ?= mips-linux-uclibc-gnu-
+CROSS_COMPILE ?= mipsel-linux-
 
 ifeq (${ISVP_ENV_KERNEL_DIR}, )
 	ISVP_ENV_KERNEL_DIR = ../../../kernel

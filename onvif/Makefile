@@ -44,7 +44,7 @@ CFLAGS           += -I$(GSOAP_DIR) -I$(GSOAP_CUSTOM_DIR) -I$(GSOAP_PLUGIN_DIR) -
 CFLAGS           += -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=1 -O2 -Wall -pipe
 
 TOOLCHAIN				= $(ONVIF_PATH)/../toolchain/bin
-CROSS_COMPILE			= $(TOOLCHAIN)/mips-linux-uclibc-gnu-
+CROSS_COMPILE			= $(TOOLCHAIN)/mipsel-linux-
 
 CC						= $(CROSS_COMPILE)gcc
 CPLUSPLUS				= $(CROSS_COMPILE)g++

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 export JPEGPATH="$(pwd)/libjpeg-turbo-1.5.3/_Install/"
 TOOLCHAIN=$(pwd)/toolchain/bin
-CROSS_COMPILE=$TOOLCHAIN/mips-linux-gnu-
+CROSS_COMPILE=$TOOLCHAIN/mipsel-linux-
 export CC=${CROSS_COMPILE}gcc
 export CXX=${CROSS_COMPILE}cpp
 export LD=${CROSS_COMPILE}ld
-export CFLAGS="-muclibc -O2"
-export CPPFLAGS="-muclibc -O2 -I${JPEGPATH}/include/"
-export LDFLAGS="-muclibc -O2 -L${JPEGPATH}/lib"
+export CFLAGS="-O2"
+export CPPFLAGS="-O2 -I${JPEGPATH}/include/"
+export LDFLAGS="-O2 -L${JPEGPATH}/lib"
 
 cd ImageMagick
 ./configure --host=mipsel-linux --prefix=${PWD}/_install  --disable-openmp --disable-opencl --without-bzlib --without-dps --without-fftw --without-fpx --without-djvu --without-fontconfig --without-freetype  --without-jbig  --without-lcms  --without-lqr --without-lzma --without-openexr --without-pango --without-png  --without-tiff --without-webp  --disable-openmp --disable-opencl  --enable-delegate-build  -with-modules  --with-jpeg=yes

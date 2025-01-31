@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 TOOLCHAIN=$(pwd)/toolchain/bin
-CROSS_COMPILE=$TOOLCHAIN/mips-linux-gnu-
+CROSS_COMPILE=$TOOLCHAIN/mipsel-linux-
 export CC=${CROSS_COMPILE}gcc
 export LD=${CROSS_COMPILE}ld
-export CFLAGS="-muclibc -O3"
-export CPPFLAGS="-muclibc -O3"
-export LDFLAGS="-muclibc -O3"
+export CFLAGS="-O3"
+export CPPFLAGS="-O3"
+export LDFLAGS="-O3"
 
 if [ ! -d libjpeg-turbo/.git ]
 then

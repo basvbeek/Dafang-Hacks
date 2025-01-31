@@ -296,10 +296,10 @@ AUTOCONF = ${SHELL} /root/jpeg-9d/missing autoconf
 AUTOHEADER = echo autoheader ignored
 AUTOMAKE = ${SHELL} /root/jpeg-9d/missing automake-1.16
 AWK = mawk
-CC = /root/toolchain/bin/mips-linux-gnu-gcc -std=gnu99
+CC = /root/toolchain/bin/mipsel-linux-gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -muclibc -O3
-CPP = /root/toolchain/bin/mips-linux-gnu-gcc -std=gnu99 -E
+CPP = /root/toolchain/bin/mipsel-linux-gcc -E
 CPPFLAGS = -muclibc -O3
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
@@ -322,7 +322,7 @@ INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 JPEG_LIB_VERSION = 13:0:4
 JPEG_LIB_VERSION_MAJOR = 9
 JPEG_LIB_VERSION_MINOR = 4
-LD = /root/toolchain/bin/mips-linux-gnu-ld
+LD = /root/toolchain/bin/mipsel-linux-ld
 LDFLAGS = -muclibc -O3
 LIBOBJS = 
 LIBS = 

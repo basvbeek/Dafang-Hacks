@@ -1,9 +1,7 @@
-#CROSS_COMPILE ?= mips-linux-gnu-
-CROSS_COMPILE ?= mips-linux-uclibc-gnu-
+CROSS_COMPILE ?= mipsel-linux-
 
 ifeq (${ISVP_ENV_KERNEL_DIR}, )
-#	ISVP_ENV_KERNEL_DIR = $(PWD)/../../../kernel
-	ISVP_ENV_KERNEL_DIR = /home/beihj/Ingenic-kernel
+	ISVP_ENV_KERNEL_DIR = $(PWD)/../../../kernel
 endif
 
 ISP_DRIVER_DIR = $(PWD)/../../isp/tx-isp

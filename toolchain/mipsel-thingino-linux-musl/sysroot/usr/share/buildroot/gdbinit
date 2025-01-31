@@ -1,0 +1,2 @@
+add-auto-load-safe-path /github/home/output/toolchain_xburst1_musl_gcc14/host/mipsel-thingino-linux-musl/sysroot
+set sysroot /github/home/output/toolchain_xburst1_musl_gcc14/host/mipsel-thingino-linux-musl/sysroot

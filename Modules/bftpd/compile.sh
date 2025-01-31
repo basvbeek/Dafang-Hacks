@@ -18,9 +18,11 @@ cat << EOF > bftpd/mypaths.h
 EOF
 fi
 
+CFLAGS="${CFLAGS} -Wno-implicit-int"
+
 cd bftpd
 ./configure --host=mips-linux --enable-debug --prefix=${INSTALLDIR}
 make clean
-sed -i "s/LIBS= -lcrypt/LIBS=\${TOOLCHAIN}\/..\/mips-linux-gnu\/libc\/uclibc\/usr\/lib\/libcrypt.a -muclibc/" Makefile
+sed -i "s/LIBS= -lcrypt/LIBS=\${TOOLCHAIN}\/..\/mipsel-thingino-linux-musl\/sysroot\/lib\/libcrypt.a/" Makefile
 make
 cp bftpd ${INSTALLDIR}/bin

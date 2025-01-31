@@ -1,4 +1,4 @@
-CROSS_COMPILE=        ../toolchain/bin/mips-linux-gnu-
+CROSS_COMPILE=        ../toolchain/bin/mipsel-linux-
 CC = $(CROSS_COMPILE)gcc
 CPLUSPLUS = $(CROSS_COMPILE)g++
 LD = $(CROSS_COMPILE)ld

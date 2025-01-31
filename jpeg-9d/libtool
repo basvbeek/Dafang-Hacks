@@ -1,6 +1,6 @@
 #! /bin/bash
 # Generated automatically by config.status (libjpeg) 9.4.0
-# Libtool was configured on host 1ea9c44ee29a:
+# Libtool was configured on host c27a9558ddc8:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 
 # Provide generalized library-building support services.
@@ -165,7 +165,7 @@ old_postuninstall_cmds=""
 lock_old_archive_extraction=no
 
 # A C compiler.
-LTCC="/root/toolchain/bin/mips-linux-gnu-gcc -std=gnu99"
+LTCC="/root/toolchain/bin/mipsel-linux-gcc"
 
 # LTCC compiler flags.
 LTCFLAGS="-muclibc -O3"
@@ -285,7 +285,7 @@ finish_eval=""
 hardcode_into_libs=yes
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="/root/toolchain/lib/gcc/mips-linux-gnu/4.7.2/uclibc /root/toolchain/lib/gcc /root/toolchain/mips-linux-gnu/lib/uclibc /root/toolchain/mips-linux-gnu/libc/lib /root/toolchain/mips-linux-gnu/libc/usr/lib "
+sys_lib_search_path_spec="/root/toolchain/lib/gcc/mipsel-thingino-linux-gnu/14.2.0 /root/toolchain/lib/gcc /root/toolchain/mipsel-thingino-linux-gnu/lib /root/toolchain/mipsel-thingino-linux-gnu/sysroot/lib /root/toolchain/mipsel-thingino-linux-gnu/sysroot/usr/lib "
 
 # Detected run-time system search path for libraries.
 sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/lib/x86_64-linux-gnu/libfakeroot /usr/local/lib /usr/local/lib/x86_64-linux-gnu /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu "
@@ -308,7 +308,7 @@ striplib="mips-linux-gnu-strip --strip-unneeded"
 
 
 # The linker used to build libraries.
-LD="/root/toolchain/bin/mips-linux-gnu-ld"
+LD="/root/toolchain/bin/mipsel-linux-ld"
 
 # How to create reloadable object files.
 reload_flag=" -r"
@@ -318,7 +318,7 @@ reload_cmds="\$LD\$reload_flag -o \$output\$reload_objs"
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$tool_oldlib"
 
 # A language specific compiler.
-CC="/root/toolchain/bin/mips-linux-gnu-gcc -std=gnu99"
+CC="/root/toolchain/bin/mipsel-linux-gcc"
 
 # Is the compiler the GNU compiler?
 with_gcc=yes

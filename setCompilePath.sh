@@ -3,7 +3,7 @@
 ROOTPATH=$(git rev-parse --show-toplevel)
 echo "setting $ROOTPATH"
 export TOOLCHAIN=${ROOTPATH}/toolchain/bin
-export CROSS_COMPILE=$TOOLCHAIN/mips-linux-gnu-
+export CROSS_COMPILE=$TOOLCHAIN/mipsel-linux-
 export CC=${CROSS_COMPILE}gcc
 export LD=${CROSS_COMPILE}ld
 export CCLD=${CROSS_COMPILE}ld
@@ -15,7 +15,7 @@ export AR=${CROSS_COMPILE}ar
 export STRIP=${CROSS_COMPILE}strip
 export INSTALLDIR=${ROOTPATH}/_install
 
-export CFLAGS="-muclibc -O3 -I${INSTALLDIR}/include"
-export CPPFLAGS="-muclibc -O3 -I${INSTALLDIR}/include"
-export CXXFLAGS="-muclibc -O3 -I${INSTALLDIR}/include"
-export LDFLAGS="-muclibc -O3 -L${INSTALLDIR}/lib"
+export CFLAGS="-O3 -I${INSTALLDIR}/include"
+export CPPFLAGS="-O3 -I${INSTALLDIR}/include"
+export CXXFLAGS="-O3 -I${INSTALLDIR}/include"
+export LDFLAGS="-O3 -L${INSTALLDIR}/lib"
