@@ -2,7 +2,7 @@
 . ../../setCompilePath.sh
 export NANO_PATH="$(pwd)/nano"
 export NCURSES_PATH="$(pwd)/ncurses"
-export CFLAGS="${CFLAGS} -I$(pwd)/ncurses/include -I$(pwd)/ncurses/include/ncursesw -static"
+export CFLAGS="${CFLAGS} -I$(pwd)/ncurses/include -I$(pwd)/ncurses/include/ncursesw -static -L$(pwd)/ncurses/lib"
 export LDFLAGS="${LDFLAGS} -L$(pwd)/ncurses/lib"
 export CPPFLAGS="${CPPFLAGS} -I$(pwd)/ncurses/include -I$(pwd)/ncurses/include/ncursesw"
 NANO_VERSION=5.6.1
@@ -12,7 +12,7 @@ NCURSES_VERSION=5.9
 
 if [ ! -d ncurses-$NCURSES_VERSION ]
 then
-	wget ftp://ftp.invisible-island.net/ncurses/ncurses-$NCURSES_VERSION.tar.gz
+	wget https://ftp.gnu.org/gnu/ncurses/ncurses-$NCURSES_VERSION.tar.gz
 	tar xf ncurses-$NCURSES_VERSION.tar.gz
 fi
 
