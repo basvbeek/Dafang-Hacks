@@ -89,7 +89,7 @@ struct audio_stream
 
     audio_stream(int devId, int aiChn, int aeChn)
         : devId(devId), aiChn(aiChn), aeChn(aeChn), running(false), imp_audio(nullptr),
-          msgChannel(std::make_shared<MsgChannel<AudioFrame>>(30)),
+          msgChannel(std::make_shared<MsgChannel<AudioFrame>>(cfg->general.audio_msg_channel_size)),
           onDataCallback{nullptr}, hasDataCallback{false} {}
 };
 
@@ -115,7 +115,7 @@ struct video_stream
 
     video_stream(int encChn, _stream *stream, const char *name)
         : encChn(encChn), stream(stream), name(name), running(false), idr(false), idr_fix(0), imp_encoder(nullptr), imp_framesource(nullptr),
-          msgChannel(std::make_shared<MsgChannel<H264NALUnit>>(MSG_CHANNEL_SIZE)), onDataCallback(nullptr),  run_for_jpeg{false},
+          msgChannel(std::make_shared<MsgChannel<H264NALUnit>>(cfg->general.video_msg_channel_size)), onDataCallback(nullptr),  run_for_jpeg{false},
           hasDataCallback{false} {}
 };
 

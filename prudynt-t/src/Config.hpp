@@ -97,6 +97,8 @@ struct _general {
     const char *loglevel;
     int osd_pool_size;
     int imp_polling_timeout;
+    int video_msg_channel_size;
+    int audio_msg_channel_size;
 };
 struct _rtsp {
     int port;

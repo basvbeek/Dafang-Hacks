@@ -14,6 +14,8 @@ general: {
 	loglevel: "INFO";  # Logging level. Options: EMERGENCY, ALERT, CRITICAL, ERROR, WARN, NOTICE, INFO, DEBUG.
 	# osd_pool_size: 1025;  # OSD pool size (0-1024).
 	# imp_polling_timeout: 500;  # IMP polling timeout (1-5000 ms).
+	# video_msg_channel_size: 60;  # Video message channel size (1-1024).
+	# audio_msg_channel_size: 60;  # Audio message channel size (1-1024).
 };
 
 # RTSP (Real-Time Streaming Protocol) Settings
