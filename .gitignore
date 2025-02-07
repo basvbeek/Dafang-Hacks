@@ -8,3 +8,4 @@ _install/*
 .bash_history
 .viminfo
 .wget-hsts
+.lesshst

@@ -1,1 +1,0 @@
-/root/toolchain/bin/mips-linux-gnu-gcc -muclibc -O3 -lrt -I../_install/include/  -muclibc -O3 -L/root/_install/lib CMakeFiles/autonight.dir/src/autonight.c.o  -o autonight 

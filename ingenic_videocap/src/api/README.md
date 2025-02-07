@@ -1,1 +1,0 @@
-The OpenMiko `api` binary.

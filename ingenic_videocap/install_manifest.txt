@@ -1,5 +1,0 @@
-/root/_install/bin/videocapture
-/root/_install/bin/autonight
-/root/_install/bin/getimage
-/root/_install/bin/api
-/root/_install/lib/libfacil.io.so
