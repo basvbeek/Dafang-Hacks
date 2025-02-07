@@ -10,6 +10,9 @@ RUN \
   libtool \
   ftp-upload \
   wget \
+  bc \
+  u-boot-tools \
+  pkg-config \
   cmake && \
   rm -rf /var/lib/apt/lists/*
 

@@ -1,0 +1,9 @@
+services:
+  dafang-hacks-dev:
+    image: dafang-hacks-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ".:/root"
+    command: tail -f /dev/null
