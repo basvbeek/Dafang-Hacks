@@ -1,2 +1,4 @@
 [user]
 	email = basvbeek@gmail.com
+[safe]
+	directory = /root

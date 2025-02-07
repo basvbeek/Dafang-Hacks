@@ -4,3 +4,7 @@
 _install/*
 .ccache
 .cmake
+.npm
+.bash_history
+.viminfo
+.wget-hsts
