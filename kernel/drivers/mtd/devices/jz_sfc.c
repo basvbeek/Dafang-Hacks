@@ -1096,7 +1096,7 @@ static int jz_spi_norflash_match_device(struct jz_sfc *flash)
 static int __init jz_sfc_probe(struct platform_device *pdev)
 {
 	struct jz_sfc *flash;
-	const char *jz_probe_types[] = {"cmdlinepart",NULL};
+//	const char *jz_probe_types[] = {"cmdlinepart",NULL};
 //	struct spi_nor_platform_data *board_info;
 //	unsigned int board_info_size = 0;
 	int num_partition_info = 0;
@@ -1210,6 +1210,13 @@ static int __init jz_sfc_probe(struct platform_device *pdev)
 
 	/* SFC controller initializations for SFC */
 	jz_sfc_init_setup(flash);
+
+	/* For NM25Q64/128EVB flash,
+	 * flash busy when CS pulls down and up but no data is transmitted,
+	 * solve by get status.*/
+	ret = jz_spi_norflash_wait_till_ready(flash);
+	if (ret)
+		return ret;
 
 	ret = jz_spi_norflash_match_device(flash);
 	if (ret) {

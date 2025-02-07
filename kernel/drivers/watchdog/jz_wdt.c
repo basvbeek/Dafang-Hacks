@@ -22,6 +22,10 @@
 #include <linux/clk.h>
 #include <linux/slab.h>
 #include <linux/err.h>
+#include <linux/delay.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+#include <jz_proc.h>
 #include <soc/base.h>
 #include <soc/tcu.h>
 
@@ -46,7 +50,12 @@
 #define DEFAULT_HEARTBEAT 5
 #define MAX_HEARTBEAT     2048
 
+static int WATCHDOG_STATE = 0;
+
+static DEFINE_SPINLOCK(watchdog_lock);
+
 static bool nowayout = WATCHDOG_NOWAYOUT;
+
 module_param(nowayout, bool, 0);
 MODULE_PARM_DESC(nowayout,
 		 "Watchdog cannot be stopped once started (default="
@@ -74,7 +83,7 @@ static int jz_wdt_ping(struct watchdog_device *wdt_dev)
 }
 
 static int jz_wdt_set_timeout(struct watchdog_device *wdt_dev,
-				    unsigned int new_timeout)
+					unsigned int new_timeout)
 {
 	struct jz_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 	unsigned int rtc_clk_rate;
@@ -113,9 +122,16 @@ static int jz_wdt_set_timeout(struct watchdog_device *wdt_dev,
 
 static int jz_wdt_start(struct watchdog_device *wdt_dev)
 {
+	unsigned long flags;
+	spin_lock_irqsave(&watchdog_lock, flags);
+
 	outl(1 << 16,TCU_IOBASE + TCU_TSCR);
 	jz_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
 
+	spin_unlock_irqrestore(&watchdog_lock, flags);
+
+	// Update the state to indicate the watchdog is now active
+	WATCHDOG_STATE = 1;
 	return 0;
 }
 
@@ -123,11 +139,18 @@ static int jz_wdt_stop(struct watchdog_device *wdt_dev)
 {
 	struct jz_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 
+	unsigned long flags;
+	spin_lock_irqsave(&watchdog_lock, flags);
+
 	outl(1 << 16,TCU_IOBASE + TCU_TSCR);
 	writew(0,drvdata->base + JZ_REG_WDT_TIMER_COUNTER);		//counter
 	writew(65535,drvdata->base + JZ_REG_WDT_TIMER_DATA);	//data
 	outl(1 << 16,TCU_IOBASE + TCU_TSSR);
 
+	spin_unlock_irqrestore(&watchdog_lock, flags);
+
+// Update the state to indicate the watchdog is now inactive
+	WATCHDOG_STATE = 0;
 	return 0;
 }
 
@@ -144,15 +167,196 @@ static const struct watchdog_ops jz_wdt_ops = {
 	.set_timeout = jz_wdt_set_timeout,
 };
 
+// Read the timeout of the watchdog
+static ssize_t watchdog_timeout_read(struct file *file, char __user *buf, size_t count, loff_t *ppos) {
+	struct jz_wdt_drvdata *drvdata = PDE_DATA(file_inode(file));
+	char timeout_str[20];
+	int len;
+
+	if (*ppos > 0 || count < sizeof(timeout_str)) {
+		return 0;
+	}
+
+	len = snprintf(timeout_str, sizeof(timeout_str), "%u\n", drvdata->wdt.timeout);
+
+	if (copy_to_user(buf, timeout_str, len)) {
+		return -EFAULT;
+	}
+
+	*ppos = len; // Update the position for next read
+	return len;
+}
+
+// Read the state of the watchdog
+static ssize_t watchdog_state_read(struct file *file, char __user *buf, size_t count, loff_t *ppos) {
+	char state[2];
+	state[0] = WATCHDOG_STATE ? '1' : '0';
+	state[1] = '\n';
+
+	if (*ppos > 0 || count < 2) {
+		return 0;
+	}
+
+	if (copy_to_user(buf, state, 2)) {
+		return -EFAULT;
+	}
+
+	*ppos = 2;
+	return 2;
+}
+
+static ssize_t watchdog_state_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos) {
+	struct jz_wdt_drvdata *drvdata = PDE_DATA(file_inode(file));
+	char buf[3]; // One for '0'/'1', one for potential newline, and one for null terminator
+
+	if (!drvdata)
+		return -ENODEV;
+
+	if (count < 1 || count > sizeof(buf) - 1)
+		return -EINVAL;
+
+	if (copy_from_user(buf, buffer, count))
+		return -EFAULT;
+
+	buf[count] = '\0'; // Null-terminate the string
+
+	// Trim newline character if present
+	if (buf[count - 1] == '\n')
+		buf[count - 1] = '\0';
+
+	if (strcmp(buf, "1") == 0) {
+		// Enable the watchdog
+		if (!WATCHDOG_STATE) {
+			jz_wdt_start(&drvdata->wdt);
+		}
+	} else if (strcmp(buf, "0") == 0) {
+		// Disable the watchdog
+		if (WATCHDOG_STATE) {
+			jz_wdt_stop(&drvdata->wdt);
+		}
+	} else {
+		return -EINVAL; // Invalid input
+	}
+
+	*ppos += count;
+	return count;
+}
+
+static ssize_t watchdog_timeout_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos) {
+	struct jz_wdt_drvdata *drvdata = PDE_DATA(file_inode(file));
+	char buf[12];
+	unsigned long new_timeout;
+	int err;
+
+	if (count >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(buf, buffer, count))
+		return -EFAULT;
+
+	buf[count] = '\0'; // Null-terminate the string
+
+	err = kstrtoul(buf, 10, &new_timeout);
+	if (err)
+		return err;
+
+	if (new_timeout < drvdata->wdt.min_timeout || new_timeout > drvdata->wdt.max_timeout)
+		return -EINVAL;
+
+	// Update the stored timeout, but only change the hardware setting if the watchdog is active
+	drvdata->wdt.timeout = new_timeout;
+
+	if (WATCHDOG_STATE) {
+		jz_wdt_set_timeout(&drvdata->wdt, new_timeout);
+	}
+
+	*ppos = count;
+	return count;
+}
+
+static ssize_t watchdog_cmd_set(struct file *file, const char __user *buffer, size_t count, loff_t *f_pos)
+{
+	unsigned int cmd_value;
+	unsigned int reg04 = 0, reglc = 0;
+
+	char *buf = kzalloc(count + 1, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+	if (copy_from_user(buf, buffer, count)) {
+		kfree(buf);
+		return -EFAULT;
+	}
+	buf[count] = '\0'; // Null terminate
+
+	if (kstrtouint(buf, 0, &cmd_value))
+		return -EINVAL;
+
+	mdelay(1000);
+	if(1 == cmd_value) {
+		// This works on =<T31
+		int time = 24000000 / 64 * 4 / 1000;
+		if(time > 65535)
+				time = 65535;
+
+		outl(1 << 16,TCU_IOBASE + 0x0c);
+
+		outl(0,WDT_IOBASE + 0x08);          //counter
+		outl(time,WDT_IOBASE + 0x00);        //data
+		outl((3<<3 | 1<<1),WDT_IOBASE + 0x0c);
+		outl(0,WDT_IOBASE + 0x04);
+		outl(1,WDT_IOBASE + 0x04);
+
+		printk("watchdog reboot system!!!\n");
+		}
+
+	kfree(buf);
+	return count;
+}
+
+static ssize_t watchdog_reset_read(struct file *file, char __user *buf, size_t count, loff_t *ppos) {
+	const char *msg = "Write 1 to force a reset via the watchdog\n";
+	int len = strlen(msg);
+
+	// Simple read - only allows reading once
+	if (*ppos > 0 || count < len)
+		return 0;
+
+	if (copy_to_user(buf, msg, len))
+		return -EFAULT;
+
+	*ppos += len; // Update the read position
+	return len;
+}
+
+static const struct file_operations watchdog_state_fops = {
+	.owner = THIS_MODULE,
+	.read = watchdog_state_read,
+	.write = watchdog_state_write,
+
+};
+
+static const struct file_operations watchdog_timeout_fops = {
+	.owner = THIS_MODULE,
+	.read = watchdog_timeout_read,
+	.write = watchdog_timeout_write,
+};
+
+static const struct file_operations watchdog_cmd_fops = {
+	.owner = THIS_MODULE,
+	.read = watchdog_reset_read,
+	.write = watchdog_cmd_set,
+};
+
 static int jz_wdt_probe(struct platform_device *pdev)
 {
 	struct jz_wdt_drvdata *drvdata;
 	struct watchdog_device *jz_wdt;
 	struct resource	*res;
+	struct proc_dir_entry *proc;
 	int ret;
 
 	drvdata = devm_kzalloc(&pdev->dev, sizeof(struct jz_wdt_drvdata),
-			       GFP_KERNEL);
+				   GFP_KERNEL);
 	if (!drvdata) {
 		dev_err(&pdev->dev, "Unable to alloacate watchdog device\n");
 		return -ENOMEM;
@@ -177,7 +381,11 @@ static int jz_wdt_probe(struct platform_device *pdev)
 		goto err_out;
 	}
 
+#ifdef CONFIG_SOC_T23
+	drvdata->rtc_clk = clk_get(NULL, "pclk");
+#else
 	drvdata->rtc_clk = clk_get(NULL, "rtc");
+#endif
 	if (IS_ERR(drvdata->rtc_clk)) {
 		dev_err(&pdev->dev, "cannot find RTC clock\n");
 		ret = PTR_ERR(drvdata->rtc_clk);
@@ -189,6 +397,19 @@ static int jz_wdt_probe(struct platform_device *pdev)
 		goto err_disable_clk;
 
 	platform_set_drvdata(pdev, drvdata);
+
+	/* proc info */
+	proc = jz_proc_mkdir("watchdog");
+	if (!proc) {
+		printk("create jz-wdt proc entry failed!\n");
+	}
+
+	proc_create_data("state", S_IRUGO | S_IWUGO, proc, &watchdog_state_fops, drvdata);
+	proc_create_data("timeout", S_IRUGO, proc, &watchdog_timeout_fops, drvdata);
+	proc_create_data("reset", S_IRUGO | S_IWUGO, proc, &watchdog_cmd_fops, NULL);
+
+	printk(KERN_INFO "jz-wdt: watchdog initialized\n");
+
 	return 0;
 
 err_disable_clk:
@@ -217,7 +438,23 @@ static struct platform_driver jz_wdt_driver = {
 	},
 };
 
-module_platform_driver(jz_wdt_driver);
+static int __init jzwdt_init(void)
+{
+	return platform_driver_register(&jz_wdt_driver);
+}
+
+static void __exit jzwdt_exit(void)
+{
+	// Remove proc entries
+	remove_proc_entry("watchdog/reset", NULL);
+	remove_proc_entry("watchdog/timeout", NULL);
+	remove_proc_entry("watchdog/state", NULL);
+	remove_proc_entry("watchdog", NULL); // Parent directory
+	return platform_driver_unregister(&jz_wdt_driver);
+}
+
+module_init(jzwdt_init);
+module_exit(jzwdt_exit);
 
 MODULE_DESCRIPTION("jz Watchdog Driver");
 MODULE_LICENSE("GPL");

@@ -276,62 +276,33 @@
 ///////////////////////////////////////////
 
 /* Data Format Register, export to libipu */
-#define RGB_888_OUT_FMT				( 1 << 25 )
+#define OUT_FMT_RGB555				0
+#define OUT_FMT_RGB565				1
+#define OUT_FMT_RGB888				2
+#define OUT_FMT_YUV422				3
+#define OUT_FMT_RGBAAA				4
+#define OUT_FMT_NV12				5
+#define OUT_FMT_NV21				6
+#define OUT_FMT_HSV                 7
+#define OUT_FMT_ARGB_8888			8
+#define OUT_FMT_ABGR_8888			9
+#define OUT_FMT_RGBA_8888			0xa
+#define OUT_FMT_BGRA_8888			0xb
 
-#define RGB_OUT_OFT_BIT				( 22 )
-#define RGB_OUT_OFT_MASK			( 7 << RGB_OUT_OFT_BIT )
-#define RGB_OUT_OFT_RGB				( 0 << RGB_OUT_OFT_BIT )
-#define RGB_OUT_OFT_RBG				( 1 << RGB_OUT_OFT_BIT )
-#define RGB_OUT_OFT_GBR				( 2 << RGB_OUT_OFT_BIT )
-#define RGB_OUT_OFT_GRB				( 3 << RGB_OUT_OFT_BIT )
-#define RGB_OUT_OFT_BRG				( 4 << RGB_OUT_OFT_BIT )
-#define RGB_OUT_OFT_BGR				( 5 << RGB_OUT_OFT_BIT )
-
-#define OUT_FMT_BIT					( 19 )
-#define OUT_FMT_MASK				( 3 <<  OUT_FMT_BIT )
-#define OUT_FMT_RGB555				( 0 <<  OUT_FMT_BIT )
-#define OUT_FMT_RGB565				( 1 <<  OUT_FMT_BIT )
-#define OUT_FMT_RGB888				( 2 <<  OUT_FMT_BIT )
-#define OUT_FMT_YUV422				( 3 <<  OUT_FMT_BIT )
-#define OUT_FMT_RGBAAA				( 4 <<  OUT_FMT_BIT )
-#define OUT_FMT_NV12				( 6 <<  OUT_FMT_BIT )
-#define OUT_FMT_NV21				( 7 <<  OUT_FMT_BIT )
-#define OUT_FMT_HSV                 ( 1 << 2 )                    /*Add HSV*/
-
-#define YUV_PKG_OUT_OFT_BIT			( 16 )
-#define YUV_PKG_OUT_OFT_MASK		( 7 << YUV_PKG_OUT_OFT_BIT )
-#define YUV_PKG_OUT_OFT_Y1UY0V		( 0 << YUV_PKG_OUT_OFT_BIT )
-#define YUV_PKG_OUT_OFT_Y1VY0U		( 1 << YUV_PKG_OUT_OFT_BIT )
-#define YUV_PKG_OUT_OFT_UY1VY0		( 2 << YUV_PKG_OUT_OFT_BIT )
-#define YUV_PKG_OUT_OFT_VY1UY0		( 3 << YUV_PKG_OUT_OFT_BIT )
-#define YUV_PKG_OUT_OFT_Y0UY1V		( 4 << YUV_PKG_OUT_OFT_BIT )
-#define YUV_PKG_OUT_OFT_Y0VY1U		( 5 << YUV_PKG_OUT_OFT_BIT )
-#define YUV_PKG_OUT_OFT_UY0VY1		( 6 << YUV_PKG_OUT_OFT_BIT )
-#define YUV_PKG_OUT_OFT_VY0UY1		( 7 << YUV_PKG_OUT_OFT_BIT )
-
-#define IN_OFT_BIT					( 2 )
-#define IN_OFT_MASK					( 3 << IN_OFT_BIT )
-#define IN_OFT_Y1UY0V				( 0 << IN_OFT_BIT )
-#define IN_OFT_Y1VY0U				( 1 << IN_OFT_BIT )
-#define IN_OFT_UY1VY0				( 2 << IN_OFT_BIT )
-#define IN_OFT_VY1UY0				( 3 << IN_OFT_BIT )
-
-#define IN_FMT_BIT					( 0 )
-#define IN_FMT_MASK					( 7 << IN_FMT_BIT )
-#define IN_FMT_YUV420				( 0 << IN_FMT_BIT )
-#define IN_FMT_YUV420_B				( 4 << IN_FMT_BIT )
-#define IN_FMT_YUV422				( 1 << IN_FMT_BIT )
-#define IN_FMT_YUV444				( 2 << IN_FMT_BIT )
-#define IN_FMT_RGB_555				( 0 << IN_FMT_BIT )
-#define IN_FMT_RGB_888			    ( 2 << IN_FMT_BIT )
-#define IN_FMT_RGB_565				( 3 << IN_FMT_BIT )
-#define IN_FMT_YUV411				( 3 << IN_FMT_BIT )
+#define IN_FMT_BIT					0
+#define IN_FMT_YUV420				1
+#define IN_FMT_YUV420_B				2
+#define IN_FMT_YUV422				3
+#define IN_FMT_YUV444				4
+#define IN_FMT_RGB_555				5
+#define IN_FMT_RGB_888			    6
+#define IN_FMT_RGB_565				7
+#define IN_FMT_YUV411				8
 
 //hwang add
 #define NV_SEL						( 1 << 7 )
 #define NV_MODE_NV12				( 0 << 8 )
 #define NV_MODE_NV21				( 1 << 8 )
-
 
 #define __enable_blk_mode()		reg_bit_set(ipu, IPU_D_FMT, BLK_SEL)
 #define __disable_blk_mode()	reg_bit_clr(ipu, IPU_D_FMT, BLK_SEL)
@@ -346,5 +317,6 @@
 	}while(0)
 #define __start_ipu()			reg_bit_set(ipu, IPU_TRIGGER, IPU_RUN)
 #define __reset_ipu()			reg_bit_set(ipu, IPU_TRIGGER, IPU_RESET)
+#define __stop_ipu()			reg_bit_set(ipu, IPU_TRIGGER, IPU_STOP)
 
 #endif // _REGS_IPU_H_

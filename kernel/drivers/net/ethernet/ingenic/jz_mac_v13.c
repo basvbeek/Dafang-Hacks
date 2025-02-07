@@ -151,6 +151,85 @@ static int jzmac_phy_reset(void)
 	return 0;
 }
 #endif
+
+static int jzmac_cpm_phy_reset()
+{
+	unsigned int mphyc = cpm_inl(CPM_MPHYC);
+	//printk("%s(%d):mphyc=%x\n", __func__, __LINE__, mphyc);
+	mphyc |= (1 << 3);
+	cpm_outl(mphyc, CPM_MPHYC);
+	msleep(50);
+	mphyc &= ~(1 << 3);
+	cpm_outl(mphyc, CPM_MPHYC);
+	msleep(50);
+	//printk("%s(%d):mphyc=%x\n", __func__, __LINE__, cpm_inl(CPM_MPHYC));
+
+	return 0;
+}
+
+#ifdef CONFIG_JZ_INTERNAL_MAC_PHY_LED_SOFTWARE_CTRL
+#define GMAC_INNER_PHY_LINKACT_LED_GPIO (32+15)
+#define GMAC_INNER_PHY_LINKACT_LED_ACTIVE_LEVEL (1)
+static int gmac_inner_phy_linkact_gpio_status = 0;
+static int gmac_inner_phy_linkact_gpio_requested = 0;
+
+static int gamc_inner_phy_led_ctrl_link(int link)
+{
+	int rc = 0;
+	if (0 == gmac_inner_phy_linkact_gpio_requested) {
+		rc = gpio_request(GMAC_INNER_PHY_LINKACT_LED_GPIO, "jzmac");
+		if (rc < 0) {
+			printk("failed to request GPIO %d\n",
+					GMAC_INNER_PHY_LINKACT_LED_GPIO);
+		}
+		gmac_inner_phy_linkact_gpio_requested = 1;
+	}
+	if (link) {
+		gmac_inner_phy_linkact_gpio_status = GMAC_INNER_PHY_LINKACT_LED_ACTIVE_LEVEL;
+		gpio_direction_output(GMAC_INNER_PHY_LINKACT_LED_GPIO, gmac_inner_phy_linkact_gpio_status);
+	} else {
+		gmac_inner_phy_linkact_gpio_status = !GMAC_INNER_PHY_LINKACT_LED_ACTIVE_LEVEL;
+		gpio_direction_output(GMAC_INNER_PHY_LINKACT_LED_GPIO, gmac_inner_phy_linkact_gpio_status);
+	}
+	return 0;
+}
+static int gamc_inner_phy_led_ctrl_act(void)
+{
+	int rc = 0;
+	if (0 == gmac_inner_phy_linkact_gpio_requested) {
+		rc = gpio_request(GMAC_INNER_PHY_LINKACT_LED_GPIO, "jzmac");
+		if (rc < 0) {
+			printk("failed to request GPIO %d\n",
+					GMAC_INNER_PHY_LINKACT_LED_GPIO);
+		}
+		gmac_inner_phy_linkact_gpio_requested = 1;
+	}
+	gmac_inner_phy_linkact_gpio_status = !gmac_inner_phy_linkact_gpio_status;
+	gpio_direction_output(GMAC_INNER_PHY_LINKACT_LED_GPIO, gmac_inner_phy_linkact_gpio_status);
+	return 0;
+}
+
+#ifdef CONFIG_JZ_MAC_SPEED_LED_SOFTWARE_CTRL
+#define GMAC_INNER_PHY_SPEED_LED_GPIO (32+6)
+static int gmac_inner_phy_speed_gpio_requested = 0;
+static int gmac_inner_phy_speed_led_ctrl(unsigned int value)
+{
+	int rc = 0;
+	if (0 == gmac_inner_phy_speed_gpio_requested) {
+		rc = gpio_request(GMAC_INNER_PHY_SPEED_LED_GPIO, "jzmac");
+		if (rc < 0) {
+			printk("failed to request GPIO %d\n",
+					GMAC_INNER_PHY_SPEED_LED_GPIO);
+		}
+		gmac_inner_phy_speed_gpio_requested = 1;
+	}
+	gpio_direction_output(GMAC_INNER_PHY_SPEED_LED_GPIO, value);
+	return 0;
+}
+#endif
+
+#endif
+
 static inline unsigned char str2hexnum(unsigned char c)
 {
 	if (c >= '0' && c <= '9')
@@ -807,9 +886,15 @@ static void jz_mac_adjust_link(struct net_device *dev)
 					break;
 				case 100:
 					synopGMAC_select_speed100(gmacdev);
+#ifdef CONFIG_JZ_MAC_SPEED_LED_SOFTWARE_CTRL
+					gmac_inner_phy_speed_led_ctrl(1);
+#endif
 					break;
 				case 10:
 					synopGMAC_select_speed10(gmacdev);
+#ifdef CONFIG_JZ_MAC_SPEED_LED_SOFTWARE_CTRL
+					gmac_inner_phy_speed_led_ctrl(0);
+#endif
 					break;
 				default:
 					printk(KERN_ERR "GMAC PHY speed NOT match!\n");
@@ -827,6 +912,9 @@ static void jz_mac_adjust_link(struct net_device *dev)
 			//mod_timer(&lp->watchdog_timer, jiffies + 1);
 		}
 	} else if (lp->old_link) {
+#ifdef CONFIG_JZ_MAC_SPEED_LED_SOFTWARE_CTRL
+		gmac_inner_phy_speed_led_ctrl(0);
+#endif
 		new_state = 1;
 		lp->old_link = 0;
 		lp->old_speed = 0;
@@ -880,7 +968,7 @@ static int mii_probe(struct net_device *dev)
 			0, PHY_INTERFACE_MODE_GMII);
 #else
 	phydev = phy_connect(dev, dev_name(&phydev->dev), &jz_mac_adjust_link,
-			0, PHY_INTERFACE_MODE_MII);
+			 PHY_INTERFACE_MODE_MII);
 #endif
 
 	if (IS_ERR(phydev)) {
@@ -1227,11 +1315,17 @@ static int jz_mac_hard_start_xmit(struct sk_buff *skb,
 		tx_ring->next_to_use = first;
 	}
 
+#ifdef CONFIG_JZ_INTERNAL_MAC_PHY_LED_SOFTWARE_CTRL
+	gamc_inner_phy_led_ctrl_act();
+#endif
+
 	//jzmac_dump_all_regs(__func__, __LINE__);
 	//jzmac_dump_all_desc(lp);
 
 	return NETDEV_TX_OK;
 }
+
+unsigned int g_tx_packets = 0;
 
 static bool jzmac_clean_tx_irq(struct jz_mac_local *lp) {
 	struct net_device *netdev = lp->netdev;
@@ -1288,9 +1382,12 @@ static bool jzmac_clean_tx_irq(struct jz_mac_local *lp) {
 	lp->total_tx_packets += total_tx_packets;
 	lp->net_stats.tx_bytes += total_tx_bytes;
 	lp->net_stats.tx_packets += total_tx_packets;
+	g_tx_packets = lp->net_stats.tx_packets;
 
 	return (count < tx_ring->count);
 }
+
+unsigned int g_rx_packets = 0;
 
 static bool jzmac_clean_rx_irq(struct jz_mac_local *lp,
 		int *work_done, int work_to_do) {
@@ -1419,6 +1516,7 @@ invalid_pkt:
 	lp->net_stats.rx_bytes += total_rx_bytes;
 	lp->net_stats.rx_packets += total_rx_packets;
 
+        g_rx_packets = lp->net_stats.rx_packets;
 	return cleaned;
 }
 
@@ -1594,9 +1692,11 @@ static void jz_mac_disable(struct jz_mac_local *lp) {
 	jz_mac_stop_activity(lp);
 	del_timer_sync(&lp->watchdog_timer);
 
+#if 0
 	spin_lock(&lp->napi_poll_lock);
 	desc_list_reinit(lp);
 	spin_unlock(&lp->napi_poll_lock);
+#endif
 }
 
 static void jzmac_init(void) {
@@ -1689,6 +1789,8 @@ static void jz_mac_configure(struct jz_mac_local *lp) {
  * Enable Interrupts, Receive, and Transmit(The same sequence as jz_mac_open, only a bit different)
  */
 static void jz_mac_enable(struct jz_mac_local *lp) {
+
+	desc_list_init(lp);
 	jz_mac_configure(lp);
 
 	napi_enable(&lp->napi);
@@ -1711,7 +1813,7 @@ static void jzmac_reinit_locked(struct jz_mac_local *lp)
 static void jz_mac_tx_timeout(struct net_device *dev)
 {
 	struct jz_mac_local *lp = netdev_priv(dev);
-
+    printk("%s,%d: \n", __func__, __LINE__);
 	/* Do the reset outside of interrupt context */
 	lp->tx_timeout_count++;
 	schedule_work(&lp->reset_task);
@@ -1824,8 +1926,10 @@ static int jz_mac_open(struct net_device *dev)
 		return -EINVAL;
 	}
 
+#ifndef CONFIG_JZ_INTERNAL_MAC_PHY
 	phy_write(lp->phydev, MII_BMCR, BMCR_RESET);
 	while(phy_read(lp->phydev, MII_BMCR) & BMCR_RESET);
+#endif
 	phy_start(lp->phydev);
 
 	if (synopGMAC_reset(gmacdev) < 0) {
@@ -2053,11 +2157,6 @@ static int jz_mac_probe(struct platform_device *pdev)
 	}
 	pd = pdev->dev.platform_data;
 	lp->mii_bus = platform_get_drvdata(pd);
-	if(IS_ERR_OR_NULL(lp->mii_bus)){
-		dev_err(&pdev->dev, "Cannot get mii_bus!\n");
-		rc = -ENODEV;
-		goto out_err_probe_mac;
-	}
 #ifdef CONFIG_MDIO_GPIO
 	lp->mii_bus->priv = ndev;
 #endif
@@ -2119,16 +2218,30 @@ static int jz_mac_probe(struct platform_device *pdev)
 	//	jzmac_dump_all_regs(__func__, __LINE__);
 	//synopGMAC_multicast_enable(gmacdev);
 
+#ifdef CONFIG_JZ_INTERNAL_MAC_PHY_LED_SOFTWARE_CTRL
+	rc = gpio_request(GMAC_INNER_PHY_LINKACT_LED_GPIO, "jzmac");
+	if (rc < 0) {
+		printk("failed to request GPIO %d\n",
+		       GMAC_INNER_PHY_LINKACT_LED_GPIO);
+	}
+#ifdef CONFIG_JZ_MAC_SPEED_LED_SOFTWARE_CTRL
+	if (0 == gmac_inner_phy_speed_gpio_requested) {
+		rc = gpio_request(GMAC_INNER_PHY_SPEED_LED_GPIO, "jzmac");
+		if (rc < 0) {
+			printk("failed to request GPIO %d\n",
+					GMAC_INNER_PHY_SPEED_LED_GPIO);
+		}
+		gmac_inner_phy_speed_gpio_requested = 1;
+	}
+#endif
+#endif
+
 	/* proc info */
 	proc = jz_proc_mkdir("mdio");
 	if (!proc) {
 		printk("create mdio info failed!\n");
 	}
 	proc_create_data("cmd", S_IRUGO, proc, &mdio_cmd_fops, NULL);
-
-
-
-
 
 	return 0;
 
@@ -2219,6 +2332,11 @@ static int jz_mdiobus_read(struct mii_bus *bus, int phy_addr, int regnum)
 		printk("err(%s): ret = %d\n", __func__, ret);
 	}
 	status = synopGMAC_read_phy_reg(gmacdev, phy_addr, regnum, &data);
+#ifdef CONFIG_JZ_INTERNAL_MAC_PHY_LED_SOFTWARE_CTRL
+	if (1 == regnum) {
+		gamc_inner_phy_led_ctrl_link(0x4&data);
+	}
+#endif
 	up(&mutex_mdio);
 	//printk("=======>mdio read phy%d reg %d, return data = 0x%04x status = %d\n",
 	//		phy_addr, regnum, data, status);
@@ -2227,12 +2345,6 @@ static int jz_mdiobus_read(struct mii_bus *bus, int phy_addr, int regnum)
 	if (status)
 		data = 0;
 
-	/* It is wrong that the value of data is 0 when reading PHY-ID,
-	 * so that the value should be changed to  0xffff.
-	 * */
-	if(regnum == MII_PHYSID1 || regnum == MII_PHYSID2){
-		data = data ? data : 0xffff;
-	}
 	return (int)data;
 }
 
@@ -2277,6 +2389,8 @@ static int  jz_mii_bus_probe(struct platform_device *pdev)
 	struct mii_bus *miibus;
 	int rc = 0, i;
 
+        printk("Ingenic on chip Ethernet MAC driver V13\n");
+
 	clk_gate = clk_get(NULL, "gmac");
 	clk_cgu = clk_get(NULL, "cgu_macphy");
 
@@ -2289,7 +2403,12 @@ static int  jz_mii_bus_probe(struct platform_device *pdev)
 		clk_put(clk_gate);
 		goto out_err_alloc;
 	}
-	clk_set_rate(clk_cgu, 50000000);
+
+#ifdef CONFIG_JZ_INTERNAL_MAC_PHY
+	clk_set_rate(clk_cgu, 25000000);
+#else
+	clk_set_rate(clk_cgu, CONFIG_JZ_MAC_CLK_VALUE ? CONFIG_JZ_MAC_CLK_VALUE : 50000000);
+#endif
 
 	/* //	synopGMAC_multicast_enable(gmacdev); */
 
@@ -2301,6 +2420,10 @@ static int  jz_mii_bus_probe(struct platform_device *pdev)
 			goto out_err_alloc;
 	}
 #endif
+
+	if (jzmac_cpm_phy_reset() < 0) {
+		goto out_err_alloc;
+	}
 
 #if defined(CONFIG_JZ_MAC_RGMII) || defined(CONFIG_JZ_MAC_GMII)
 	/* CIM0_MCLK/GMAC_GTXC/EPD_PWC/PB9 */

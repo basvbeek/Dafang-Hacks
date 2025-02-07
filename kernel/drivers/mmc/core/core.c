@@ -54,7 +54,8 @@
  */
 #define MMC_BKOPS_MAX_TIMEOUT	(4 * 60 * 1000) /* max time to wait in ms */
 
-static struct workqueue_struct *workqueue;
+#define CUSTOMED_HOST_NUM	3
+static struct workqueue_struct *workqueue[CUSTOMED_HOST_NUM] = { NULL };
 static const unsigned freqs[] = { 400000, 300000, 200000, 100000 };
 
 /*
@@ -88,15 +89,18 @@ MODULE_PARM_DESC(
 static int mmc_schedule_delayed_work(struct delayed_work *work,
 				     unsigned long delay)
 {
-	return queue_delayed_work(workqueue, work, delay);
+	struct mmc_host *host =
+		container_of(work, struct mmc_host, detect);
+
+	return queue_delayed_work(workqueue[host->index], work, delay);
 }
 
 /*
  * Internal function. Flush all scheduled work from the MMC work queue.
  */
-static void mmc_flush_scheduled_work(void)
+static void mmc_flush_scheduled_work(int index)
 {
-	flush_workqueue(workqueue);
+	flush_workqueue(workqueue[index]);
 }
 
 #ifdef CONFIG_FAIL_MMC_REQUEST
@@ -2500,7 +2504,7 @@ void mmc_stop_host(struct mmc_host *host)
 	host->rescan_disable = 1;
 	if (cancel_delayed_work_sync(&host->detect))
 		wake_unlock(&host->detect_wake_lock);
-	mmc_flush_scheduled_work();
+	mmc_flush_scheduled_work(host->index);
 
 	/* clear pm flags now and let card drivers set them as needed */
 	host->pm_flags = 0;
@@ -2699,7 +2703,7 @@ int mmc_suspend_host(struct mmc_host *host)
 
 	if (cancel_delayed_work(&host->detect))
 		wake_unlock(&host->detect_wake_lock);
-	mmc_flush_scheduled_work();
+	mmc_flush_scheduled_work(host->index);
 
 	mmc_bus_get(host);
 	if (host->bus_ops && !host->bus_dead) {
@@ -2892,12 +2896,15 @@ EXPORT_SYMBOL(mmc_set_embedded_sdio_data);
 
 static int __init mmc_init(void)
 {
-	int ret;
+	int ret, i;
 
-	workqueue = alloc_ordered_workqueue("kmmcd", 0);
-	if (!workqueue)
-		return -ENOMEM;
-
+	for (i = 0; i < CUSTOMED_HOST_NUM; i++) {
+		char qname[8];
+		sprintf(qname, "kmmcd-%d", i);
+		workqueue[i] = alloc_ordered_workqueue(qname, 0);
+		if (!workqueue[i])
+			return -ENOMEM;
+	}
 	ret = mmc_register_bus();
 	if (ret)
 		goto destroy_workqueue;
@@ -2917,17 +2924,28 @@ unregister_host_class:
 unregister_bus:
 	mmc_unregister_bus();
 destroy_workqueue:
-	destroy_workqueue(workqueue);
-
+	for (i = 0; i < CUSTOMED_HOST_NUM; i++) {
+		if (workqueue[i]) {
+			destroy_workqueue(workqueue[i]);
+			workqueue[i] = NULL;
+		}
+	}
 	return ret;
 }
 
 static void __exit mmc_exit(void)
 {
+	int i;
+
 	sdio_unregister_bus();
 	mmc_unregister_host_class();
 	mmc_unregister_bus();
-	destroy_workqueue(workqueue);
+	for (i = 0; i < CUSTOMED_HOST_NUM; i++) {
+		if (workqueue[i]) {
+			destroy_workqueue(workqueue[i]);
+			workqueue[i] = NULL;
+		}
+	}
 }
 
 subsys_initcall(mmc_init);

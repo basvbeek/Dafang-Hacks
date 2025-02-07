@@ -36,7 +36,7 @@
 #define JZ_REG_ADC_STATUS       0x0c
 
 #define JZ_REG_ADC_AUX_BASE	0x10
-#define JZ_REG_ADC_CLKDIV	0x28
+#define JZ_REG_ADC_CLKDIV	0x20
 /*
  *the following registeres is for touchscreen<junyang@ingenic.cn>
  */
@@ -44,7 +44,7 @@
 #define JZ_REG_ADC_WAIT		0x14
 #define JZ_REG_ADC_TCH		0x18
 #define JZ_REG_ADC_CMD		0x24
-#define CLKDIV		120
+#define CLKDIV		12
 #define CLKDIV_US       2
 #define CLKDIV_MS       200
 
@@ -59,7 +59,11 @@ enum {
 	JZ_ADC_IRQ_AUX7,
 };
 
+#ifdef CONFIG_SOC_T23
+#define JZ_ADC_IRQ_NUM	1
+#else
 #define JZ_ADC_IRQ_NUM	8
+#endif
 
 #if ( JZ_ADC_IRQ_NUM > SADC_NR_IRQS )
 #error "SADC module get error irq number!"
@@ -134,8 +138,8 @@ static void jz_adc_irq_demux(unsigned int irq, struct irq_desc *desc)
 	unsigned int i;
 
 	status = readb(adc->base + JZ_REG_ADC_STATUS);
-	
- 	for (i = 0; i < SADC_NR_IRQS; i++) {
+
+	for (i = 0; i < SADC_NR_IRQS; i++) {
 		if (status & BIT(i)) {
 			generic_handle_irq(adc->irq_base + i);
 		}
@@ -188,8 +192,8 @@ static int jz_adc_cell_enable(struct platform_device *pdev)
 {
 	struct jz_adc *adc = dev_get_drvdata(pdev->dev.parent);
 
-	jz_adc_enable(adc);
-	msleep(5);
+	/* jz_adc_enable(adc); */
+	/* msleep(5); */
 	jz_adc_set_enabled(adc, pdev->id, true);
 
 	return 0;
@@ -200,7 +204,7 @@ static int jz_adc_cell_disable(struct platform_device *pdev)
 	struct jz_adc *adc = dev_get_drvdata(pdev->dev.parent);
 
 	jz_adc_set_enabled(adc, pdev->id, false);
-	jz_adc_disable(adc);
+	/* jz_adc_disable(adc); */
 
 	return 0;
 }
@@ -255,7 +259,7 @@ static struct resource jz_aux_resources[] = {
 		.end	= JZ_REG_ADC_AUX_BASE + 1,
 		.flags	= IORESOURCE_MEM,
 	},
-};	
+};
 
 static struct resource jz_aux_resources1[] = {
 	{
@@ -267,7 +271,7 @@ static struct resource jz_aux_resources1[] = {
 		.end	= JZ_REG_ADC_AUX_BASE + 3,
 		.flags	= IORESOURCE_MEM,
 	},
-};	
+};
 
 static struct resource jz_aux_resources2[] = {
 	{
@@ -279,7 +283,7 @@ static struct resource jz_aux_resources2[] = {
 		.end	= JZ_REG_ADC_AUX_BASE + 5,
 		.flags	= IORESOURCE_MEM,
 	},
-};	
+};
 
 static struct resource jz_aux_resources3[] = {
 	{
@@ -291,7 +295,7 @@ static struct resource jz_aux_resources3[] = {
 		.end	= JZ_REG_ADC_AUX_BASE + 7,
 		.flags	= IORESOURCE_MEM,
 	},
-};	
+};
 
 static struct resource jz_aux_resources4[] = {
 	{
@@ -303,7 +307,7 @@ static struct resource jz_aux_resources4[] = {
 		.end	= JZ_REG_ADC_AUX_BASE + 9,
 		.flags	= IORESOURCE_MEM,
 	},
-};	
+};
 
 static struct resource jz_aux_resources5[] = {
 	{
@@ -315,7 +319,7 @@ static struct resource jz_aux_resources5[] = {
 		.end	= JZ_REG_ADC_AUX_BASE + 11,
 		.flags	= IORESOURCE_MEM,
 	},
-};	
+};
 
 static struct resource jz_aux_resources6[] = {
 	{
@@ -327,7 +331,7 @@ static struct resource jz_aux_resources6[] = {
 		.end	= JZ_REG_ADC_AUX_BASE + 13,
 		.flags	= IORESOURCE_MEM,
 	},
-};	
+};
 
 static struct resource jz_aux_resources7[] = {
 	{
@@ -339,7 +343,7 @@ static struct resource jz_aux_resources7[] = {
 		.end	= JZ_REG_ADC_AUX_BASE + 15,
 		.flags	= IORESOURCE_MEM,
 	},
-};	
+};
 
 
 static struct mfd_cell jz_adc_cells[] = {
@@ -360,7 +364,7 @@ static struct mfd_cell jz_adc_cells[] = {
 
 		.enable	= jz_adc_cell_enable,
 		.disable = jz_adc_cell_disable,
-	},	
+	},
 	{
 		.id = 2,
 		.name = "jz-aux",
@@ -496,13 +500,15 @@ static int jz_adc_probe(struct platform_device *pdev)
 
 	writew(0x8000, adc->base + JZ_REG_ADC_ENABLE);
 	writew(0xffff, adc->base + JZ_REG_ADC_CTRL);
+	msleep(5);
+	writew(0x0000, adc->base + JZ_REG_ADC_ENABLE);
 
 	clkdiv = CLKDIV - 1;
 	clkdiv_us = CLKDIV_US - 1;
 	clkdiv_ms = CLKDIV_MS - 1;
 
 	jz_adc_clk_div(adc, clkdiv, clkdiv_us, clkdiv_ms);
-	
+
 	ret = mfd_add_devices(&pdev->dev, 0, jz_adc_cells,
 			ARRAY_SIZE(jz_adc_cells), mem_base, adc->irq_base,NULL);
 	if (ret < 0) {

@@ -22,6 +22,7 @@
 	.macro	EX insn, reg, src
 	.set	push
 	.set	nomacro
+	.set	hardfloat
 .ex\@:	\insn	\reg, \src
 	.set	pop
 	.section __ex_table,"a"

@@ -41,9 +41,9 @@ struct spi_device_id jz_id_table[] = {
 	},
 };
 
-#define SIZE_BOOTLOADER		0x100000
-#define SIZE_KERNEL     	0x200000
-#define SIZE_ROOTFS			0x500000
+#define SIZE_BOOTLOADER                0x100000
+#define SIZE_KERNEL            0x200000
+#define SIZE_ROOTFS                    0x500000
 struct mtd_partition jz_mtd_partition1[] = {
 	{
 		.name =     "bootloader",
@@ -79,7 +79,7 @@ static struct spi_nor_platform_data spi_nor_pdata = {
 	.sectorsize     = 4 * 1024,
 	.chipsize       = 8192 * 1024,
 	.erasesize      = 4 * 1024,
-	.id             = 0xc84017,
+	.id             = 0xc22018,
 
 	.block_info     = flash_block_info,
 	.num_block_info = ARRAY_SIZE(flash_block_info),
@@ -94,6 +94,7 @@ static struct spi_nor_platform_data spi_nor_pdata = {
 	.mtd_partition  = jz_mtd_partition1,
 	.num_partition_info = ARRAY_SIZE(jz_mtd_partition1),
 };
+#ifdef CONFIG_JZ_SPI0
 struct spi_board_info jz_spi0_board_info[1] = {
 	[0] ={
 		.modalias       =  "jz_spi_norflash",
@@ -106,7 +107,21 @@ struct spi_board_info jz_spi0_board_info[1] = {
 
 	},
 };
+#endif
+#ifdef CONFIG_JZ_SPI1
+struct spi_board_info jz_spi1_board_info[1] = {
+	[0] ={
+		.modalias       =  "jz_spi_norflash",
+		//.modalias       =  "spidev",
+		.platform_data          = &spi_nor_pdata,
+		.controller_data        = 0, /* cs for spi gpio */
+		.max_speed_hz           = 25000000,
+		.bus_num                = 1,
+		.chip_select            = 0,
 
+	},
+};
+#endif
 static struct mtd_partition *jz_mtd_partition;
 
 static struct jz_spi_norflash *to_jz_spi_norflash(struct mtd_info *mtd_info)
@@ -116,12 +131,12 @@ static struct jz_spi_norflash *to_jz_spi_norflash(struct mtd_info *mtd_info)
 
 static inline int jz_spi_write(struct spi_device *spi, const void *buf, size_t len)
 {
-	struct spi_transfer	t = {
-			.tx_buf		= buf,
-			.len		= len,
+	struct spi_transfer     t = {
+			.tx_buf         = buf,
+			.len            = len,
 			.cs_change  = 1,
 		};
-	struct spi_message	m;
+	struct spi_message      m;
 
 	spi_message_init(&m);
 	spi_message_add_tail(&t, &m);
@@ -516,6 +531,7 @@ static  int jz_spi_norflash_match_device(struct spi_device *spi,int chip_id)
 
 	id = (recv_command[0] << 16) | (recv_command[1] << 8) | recv_command[2];
 
+	//printk("nor flash id = 0x%x\n",id);
 	if(id == chip_id){
 		printk("the spi mtd chip id is %x\n",id);
 	}else{
@@ -529,7 +545,7 @@ static  int jz_spi_norflash_match_device(struct spi_device *spi,int chip_id)
 static int jz_spi_norflash_probe(struct spi_device *spi)
 {
 	int ret;
-	const char *jz_probe_types[] = {"cmdlinepart"};
+	//const char *jz_probe_types[] = {"cmdlinepart"};
 	struct jz_spi_norflash *flash;
 	struct spi_nor_platform_data *pdata = spi->dev.platform_data;
 	int chip_id = 0;
@@ -620,7 +636,12 @@ static struct spi_driver jz_spi_norflash_driver = {
 
 static int __init jz_spi_norflash_driver_init(void)
 {
+#ifdef CONFIG_JZ_SPI0
 	spi_register_board_info(jz_spi0_board_info, ARRAY_SIZE(jz_spi0_board_info));
+#endif
+#ifdef CONFIG_JZ_SPI1
+	spi_register_board_info(jz_spi1_board_info, ARRAY_SIZE(jz_spi1_board_info));
+#endif
 	return spi_register_driver(&jz_spi_norflash_driver);
 }
 static void __exit jz_spi_norflash_driver_exit(void)

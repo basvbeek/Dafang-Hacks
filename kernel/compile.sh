@@ -1,8 +1,11 @@
-ROOTPATH=$(git rev-parse --show-toplevel)
-export INSTALLDIR=${ROOTPATH}/_install
+#!/usr/bin/env bash
+
+set -e # fail out if any step fails
+
+. ../setCompilePath.sh
+
 export INSTALL_MOD_PATH=${INSTALLDIR}/lib/modules/
 
-apt update && apt install -y bc u-boot-tools
 make clean
 make uImage -j8
 make modules

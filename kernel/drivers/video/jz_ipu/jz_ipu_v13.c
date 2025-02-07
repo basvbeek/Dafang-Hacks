@@ -148,43 +148,6 @@ static void reg_bit_clr(struct jz_ipu *ipu, int offset, unsigned int bit)
 	reg_write(ipu, offset, reg);
 }
 
-static unsigned int _hal_infmt_is_packaged(int hal_fmt)
-{
-	unsigned int is_packaged = 0;
-
-	switch (hal_fmt) {
-		case HAL_PIXEL_FORMAT_YCbCr_422_SP:
-		case HAL_PIXEL_FORMAT_YCbCr_420_SP:
-		case HAL_PIXEL_FORMAT_YCbCr_422_P:
-		case HAL_PIXEL_FORMAT_YCbCr_420_P:
-		case HAL_PIXEL_FORMAT_JZ_YUV_420_P:
-		case HAL_PIXEL_FORMAT_YCbCr_420_B:
-		case HAL_PIXEL_FORMAT_JZ_YUV_420_B:
-		case HAL_PIXEL_FORMAT_NV12:
-		case HAL_PIXEL_FORMAT_NV21:
-        case HAL_PIXEL_FORMAT_HSV:   /*Add HSV*/
-			is_packaged = 0;
-			break;
-		case HAL_PIXEL_FORMAT_RGBA_5551:
-		case HAL_PIXEL_FORMAT_BGRA_5551:
-		case HAL_PIXEL_FORMAT_RGBA_8888:
-		case HAL_PIXEL_FORMAT_ARGB_8888:
-		case HAL_PIXEL_FORMAT_ABGR_8888:
-		case HAL_PIXEL_FORMAT_RGBX_8888:
-		case HAL_PIXEL_FORMAT_RGB_888:
-		case HAL_PIXEL_FORMAT_BGRA_8888:
-		case HAL_PIXEL_FORMAT_BGRX_8888:
-		case HAL_PIXEL_FORMAT_RGB_565:
-		case HAL_PIXEL_FORMAT_YCbCr_422_I:
-		case HAL_PIXEL_FORMAT_YCbCr_420_I:
-		default:
-			is_packaged = 1;
-			break;
-	}
-
-	return is_packaged;
-}
-
 static unsigned int _hal_to_ipu_infmt(int hal_fmt, int *isrgb)
 {
 	unsigned int ipu_fmt = IN_FMT_YUV420;
@@ -216,11 +179,6 @@ static unsigned int _hal_to_ipu_infmt(int hal_fmt, int *isrgb)
 			ipu_fmt = IN_FMT_YUV420_B;
 			rgb = 0;
 			break;
-		case HAL_PIXEL_FORMAT_RGBA_5551: //background is not support 5551 format
-		case HAL_PIXEL_FORMAT_BGRA_5551:
-			ipu_fmt = IN_FMT_RGB_555;
-			rgb = 1;
-			break;
 		case HAL_PIXEL_FORMAT_RGBA_8888:
 		case HAL_PIXEL_FORMAT_RGBX_8888:
 		case HAL_PIXEL_FORMAT_RGB_888:
@@ -229,10 +187,6 @@ static unsigned int _hal_to_ipu_infmt(int hal_fmt, int *isrgb)
 		case HAL_PIXEL_FORMAT_ABGR_8888:
 		case HAL_PIXEL_FORMAT_BGRX_8888:
 			ipu_fmt = IN_FMT_RGB_888;
-			rgb = 1;
-			break;
-		case HAL_PIXEL_FORMAT_RGB_565: //background is not support 565 format
-			ipu_fmt = IN_FMT_RGB_565;
 			rgb = 1;
 			break;
 		case HAL_PIXEL_FORMAT_NV12:
@@ -251,24 +205,20 @@ static unsigned int _hal_to_ipu_infmt(int hal_fmt, int *isrgb)
 
 static unsigned int _hal_to_ipu_outfmt(int hal_fmt)
 {
-	unsigned int ipu_fmt = OUT_FMT_RGB888;
+	unsigned int ipu_fmt = OUT_FMT_RGBA_8888;
 
 	switch (hal_fmt) {
 		case HAL_PIXEL_FORMAT_ARGB_8888:
+			ipu_fmt = OUT_FMT_ARGB_8888;
+			break;
 		case HAL_PIXEL_FORMAT_ABGR_8888:
+			ipu_fmt = OUT_FMT_ABGR_8888;
+			break;
 		case HAL_PIXEL_FORMAT_RGBA_8888:
-		case HAL_PIXEL_FORMAT_RGBX_8888:
-		case HAL_PIXEL_FORMAT_RGB_888:
+			ipu_fmt = OUT_FMT_RGBA_8888;
+			break;
 		case HAL_PIXEL_FORMAT_BGRA_8888:
-		case HAL_PIXEL_FORMAT_BGRX_8888:
-			ipu_fmt = OUT_FMT_RGB888;
-			break;
-		case HAL_PIXEL_FORMAT_RGB_565:  //It is not support
-			ipu_fmt = OUT_FMT_RGB565;
-			break;
-		case HAL_PIXEL_FORMAT_RGBA_5551:  //It is not support
-		case HAL_PIXEL_FORMAT_BGRA_5551:
-			ipu_fmt = OUT_FMT_RGB555;
+			ipu_fmt = OUT_FMT_BGRA_8888;
 			break;
 		case HAL_PIXEL_FORMAT_YCbCr_422_I:
 			ipu_fmt = OUT_FMT_YUV422;
@@ -299,13 +249,7 @@ static int _ipu_set_bg_route(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 	unsigned int outh = 0;
 	unsigned int infmt = 0;
 	unsigned int outfmt = 0;
-
 	unsigned int outwstride = 0;
-
-	unsigned int infmt_bits = 0;
-	unsigned int outfmt_bits = 0;
-	unsigned int outrgb_bits = 0;
-
 	struct ipu_param *ip = ipu_param;
 
 	srcw = ip->bg_w;
@@ -318,14 +262,11 @@ static int _ipu_set_bg_route(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 	infmt  = _hal_to_ipu_infmt(ip->bg_fmt, &bgrgb);
 	outfmt = _hal_to_ipu_outfmt(ip->out_fmt);
 	switch (outfmt) {
-		case OUT_FMT_RGB888:
+		case OUT_FMT_ARGB_8888:
+		case OUT_FMT_ABGR_8888:
+		case OUT_FMT_RGBA_8888:
+		case OUT_FMT_BGRA_8888:
 			outwstride = outw << 2;
-			break;
-		case OUT_FMT_RGB555:	//not used
-			outwstride = outw << 1;
-			break;
-		case OUT_FMT_RGB565:    //not used
-			outwstride = outw << 1;
 			break;
 		default:
 			outwstride = outw;
@@ -333,53 +274,27 @@ static int _ipu_set_bg_route(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 	}
 	reg_write(ipu, IPU_IN_FM_GS, (IN_FM_W(srcw) | IN_FM_H(srch)));
 
-   if(ip->cmd & IPU_CMD_OSD)
+   if (ip->cmd & IPU_CMD_OSD)
     {
 	    reg_write(ipu, IPU_OSD_CH_B_BAK_ARGB, 0xffaa7733);
     }
 
-	switch (ip->out_fmt) {
-		case HAL_PIXEL_FORMAT_RGBX_8888:
-			outrgb_bits = RGB_OUT_OFT_BGR;
-			break;
-		case HAL_PIXEL_FORMAT_RGB_888:
-		case HAL_PIXEL_FORMAT_RGB_565:
-		case HAL_PIXEL_FORMAT_BGRA_8888:
-		case HAL_PIXEL_FORMAT_BGRX_8888:
-		case HAL_PIXEL_FORMAT_RGBA_5551:
-		default:
-			outrgb_bits = RGB_OUT_OFT_RGB;    //outrgb_bits set 22st bit,this bit in IPU_D_FMT was not used
-			break;
-	}
-	infmt_bits = infmt;
-	outfmt_bits = outfmt;     //outfmt_bits set 19st bit,IPU_D_FMT was not used
-	if (infmt == IN_FMT_YUV422) {
-		infmt_bits |= IN_OFT_Y1UY0V;
-	}
-	if (outfmt == OUT_FMT_YUV422) {
-		outfmt_bits |= YUV_PKG_OUT_OFT_Y1UY0V;
-	}
-
-/****** Add HSV *******/
-    if((outfmt == OUT_FMT_HSV) || (ip->out_fmt == OUT_FMT_HSV)){/* out format */
+    /****** Add HSV,ARGB,ABGR,RGBA,BGRA *******/
+    if (outfmt == OUT_FMT_HSV) {/* out format */
         reg_val = 0x4;
-    }else if((outfmt == OUT_FMT_RGB888) || (ip->out_fmt == OUT_FMT_RGB888)){
+    } else if (outfmt == OUT_FMT_ARGB_8888) {
+        reg_val = 0x0;
+	} else if (outfmt == OUT_FMT_ABGR_8888) {
+        reg_val = 0x28;
+	} else if (outfmt == OUT_FMT_RGBA_8888) {
         reg_val = 0x40;
-    }else if((outfmt == OUT_FMT_NV21) || (ip->out_fmt == OUT_FMT_NV21)){
+	} else if (outfmt == OUT_FMT_BGRA_8888) {
+        reg_val = 0x68;
+    } else if (outfmt == OUT_FMT_NV21) {
         reg_val = 0x3;
     }
 	reg_write(ipu, IPU_D_FMT, reg_val);
 
-    if(ip->cmd & IPU_CMD_OSD){
-	    if (ip->bg_fmt == HAL_PIXEL_FORMAT_NV12) {
-		    reg_val = 0x2;
-	    } else if (ip->bg_fmt == HAL_PIXEL_FORMAT_NV21) {
-		    reg_val = 0x3;
-	    } else{
-		    reg_val = infmt_bits | outfmt_bits | outrgb_bits;
-	    }
-	    reg_write(ipu, IPU_D_FMT, reg_val);
-    }
 	/*
 	* IPU_D_FMT just use 0~6 bit, if IPU_OSD_CH_BK_PARA set CH_BK_PIC_TYPE ,
 	* and the IPU was use to do OSD, this register OUT_FMT bits was valueless,
@@ -391,16 +306,16 @@ static int _ipu_set_bg_route(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 		__enable_blk_mode();
 	}
 
-	if ((ip->out_fmt == HAL_PIXEL_FORMAT_NV12) || (ip->out_fmt == HAL_PIXEL_FORMAT_NV21)) {/*Add HSV*/
+	if ((ip->out_fmt == HAL_PIXEL_FORMAT_NV12) || (ip->out_fmt == HAL_PIXEL_FORMAT_NV21)) {/*Add NV12 or NV21*/
 		reg_write(ipu, IPU_OUT_STRIDE,	srcw);
         reg_write(ipu, IPU_NV_OUT_STRIDE, srcw);
-	}else if (ip->out_fmt == HAL_PIXEL_FORMAT_HSV){/* out stride */
+	} else if (ip->out_fmt == HAL_PIXEL_FORMAT_HSV) {/* Add HSV */
         reg_write(ipu, IPU_OUT_STRIDE, srcw);
         reg_write(ipu, IPU_NV_OUT_STRIDE, srcw*2);
         reg_write(ipu, IPU_OUT_V_STRIDE, srcw);
-    }else if (ip->out_fmt == HAL_PIXEL_FORMAT_BGRA_8888 || ip->out_fmt == HAL_PIXEL_FORMAT_RGBA_8888){
+    } else if (ip->out_fmt == HAL_PIXEL_FORMAT_BGRA_8888 || ip->out_fmt == HAL_PIXEL_FORMAT_RGBA_8888 || ip->out_fmt == HAL_PIXEL_FORMAT_ARGB_8888 || ip->out_fmt == HAL_PIXEL_FORMAT_ABGR_8888) {/* Add ARGB */
         reg_write(ipu, IPU_OUT_STRIDE, srcw<<2);
-    }else {
+    } else {
 		reg_write(ipu, IPU_OUT_STRIDE, outwstride);
 	}
 
@@ -576,9 +491,8 @@ static int _ipu_set_osd_chx_route(struct jz_ipu *ipu, struct ipu_param *ip, int 
 			break;
 	}
 
-	isrgb =  _ipu_osd_isrgb(fmt);
+	isrgb = _ipu_osd_isrgb(fmt);
 	if (isrgb < 0) {
-
 			printk("ipu: osd fmt err fmt = %d\n", fmt);
 			return -1;
 	}
@@ -592,7 +506,8 @@ static int _ipu_set_osd_chx_route(struct jz_ipu *ipu, struct ipu_param *ip, int 
 		reg_write(ipu, IPU_OSD_IN_CH0_Y_STRIDE+0x10*ch, srcw);
 		reg_write(ipu, IPU_OSD_IN_CH0_UV_STRIDE+0x10*ch, srcw);
 	}
-	if((srcw > 0) && (srch > 0)) {
+
+    if((srcw > 0) && (srch > 0)) {
 		if (isrgb == 1)
 			reg_write(ipu, IPU_OSD_CH0_GS+4*ch, (srcw << 16 << 2) | (srch << 0));
 		else if (isrgb == 2)       //The format is RGBA1555
@@ -625,7 +540,8 @@ static int _ipu_set_osd_chx_route(struct jz_ipu *ipu, struct ipu_param *ip, int 
 		reg_write(ipu, IPU_OSD_CH0_PARA+4*ch, para);
 	else
 		reg_write(ipu, IPU_OSD_CH0_PARA+4*ch, (0x1 | (0x2 << 11) | (0x01 << 1) | (0x32 << 3) | (0 << 19) | (0 << 18)));
-	return 0;
+
+    return 0;
 }
 
 static int _ipu_set_bg_buffer(struct jz_ipu *ipu, struct ipu_param *ipu_param)
@@ -646,7 +562,8 @@ static int _ipu_set_bg_buffer(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 		dev_err(ipu->dev, "ipu is NULL\n");
 		return -1;
 	}
-	/* nv12 */
+
+    /* nv12 */
 	bg_y_pbuf = ((unsigned int)ip->bg_buf_p);
 	bg_u_pbuf = ((unsigned int)ip->bg_buf_p) + ip->bg_w*ip->bg_h;
 	bg_v_pbuf = bg_u_pbuf;
@@ -667,21 +584,22 @@ static int _ipu_set_bg_buffer(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 	reg_write(ipu, IPU_U_ADDR, bg_u_pbuf);
 
 	/* set out buff */
-    if(ip->cmd & IPU_CMD_CSC) {/* out addr */
-        if(ip->out_fmt == HAL_PIXEL_FORMAT_HSV){
+    if (ip->cmd & IPU_CMD_CSC) {/* out addr */
+        if (ip->out_fmt == HAL_PIXEL_FORMAT_HSV) {
             reg_write(ipu, IPU_OUT_ADDR, out_y_pbuf);
             reg_write(ipu, IPU_NV_OUT_ADDR, out_uv_pbuf);
             reg_write(ipu, IPU_OUT_V_ADDR, out_v_pbuf);
-        }else if(ip->out_fmt == HAL_PIXEL_FORMAT_NV21){
+        } else if (ip->out_fmt == HAL_PIXEL_FORMAT_NV21) {
             reg_write(ipu, IPU_OUT_ADDR, out_nv21_y);
             reg_write(ipu, IPU_NV_OUT_ADDR, out_nv21_uv);
-        }else{
+        } else {
             reg_write(ipu, IPU_OUT_ADDR, out_uv_pbuf);/* OUT BGRA */
         }
-    }else{
+    } else {
 	    reg_write(ipu, IPU_OUT_ADDR, bg_y_pbuf);
 	    reg_write(ipu, IPU_NV_OUT_ADDR, bg_u_pbuf);
     }
+
     return 0;
 }
 
@@ -722,14 +640,15 @@ static int _ipu_set_osdx_buffer(struct jz_ipu *ipu, struct ipu_param *ipu_param,
 			return -1;
 			break;
 	}
-//	infmt = _hal_to_ipu_infmt(ip->bg_fmt, 0);
-	/* set osd chx addr */
+
+    /* set osd chx addr */
 	IPU_DEBUG("ipu: ch = %d, osdx_y_pbuf = 0x%08x, osdx_uv_pbuf = 0x%08x\n", ch, osdx_y_pbuf, osdx_uv_pbuf);
 	reg_write(ipu, IPU_OSD_IN_CH0_Y_ADDR+0x10*ch, osdx_y_pbuf);
 	reg_write(ipu, IPU_OSD_IN_CH0_UV_ADDR+0x10*ch, osdx_uv_pbuf);
 
 	return 0;
 }
+
 static int _ipu_dump_regs(struct jz_ipu *ipu)
 {
 	int i = 0;
@@ -753,6 +672,7 @@ static void _ipu_dump_param(struct jz_ipu *ipu)
 {
 	return;
 }
+
 static int ipu_dump_info(struct jz_ipu *ipu)
 {
 	int ret = 0;
@@ -771,6 +691,7 @@ static int ipu_start(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 {
 	int ret = 0;
 	struct ipu_param *ip = ipu_param;
+
 	if ((ipu == NULL) || (ipu_param == NULL)) {
 		dev_err(ipu->dev, "ipu: ipu is NULL or ipu_param is NULL\n");
 		return -1;
@@ -784,6 +705,10 @@ static int ipu_start(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 	IPU_DEBUG("ipu: enter ipu_start %d\n", current->pid);
 
 	clk_enable(ipu->clk);
+#ifdef CONFIG_SOC_T31
+	clk_enable(ipu->ahb1_gate);
+#endif
+	__stop_ipu();
 	__reset_ipu();
 
 	ret = _ipu_set_bg_route(ipu, ip);
@@ -867,10 +792,12 @@ static int ipu_start(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 	/* reg_bit_set(ipu, IPU_TRIGGER, 6<<6); */
 	/* start ipu */
 	__start_ipu();
+
 #ifdef DEBUG
 	ipu_dump_info(ipu);
 #endif
 	IPU_DEBUG("ipu_start\n");
+
 	ret = wait_for_completion_interruptible_timeout(&ipu->done_ipu, msecs_to_jiffies(2000));
 	if (ret < 0) {
 		printk("ipu: done_ipu wait_for_completion_interruptible_timeout err %d\n", ret);
@@ -883,15 +810,23 @@ static int ipu_start(struct jz_ipu *ipu, struct ipu_param *ipu_param)
 	} else {
 		;
 	}
-	IPU_DEBUG("ipu: exit ipu_start %d\n", current->pid);
-	
+
+    IPU_DEBUG("ipu: exit ipu_start %d\n", current->pid);
+
+#ifdef CONFIG_SOC_T31
+	clk_disable(ipu->ahb1_gate);
+#endif
+
     return 0;
-    
+
 err_ipu_wait_for_done:
 err_ipu_set_osdx_buffer:
 err_ipu_set_bg_buffer:
 err_ipu_set_osd_chx_route:
 err_ipu_set_bg_route:
+#ifdef CONFIG_SOC_T31
+	clk_disable(ipu->ahb1_gate);
+#endif
 err_cmd:
 	return ret;
 
@@ -985,7 +920,7 @@ static long ipu_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				dma_cache_sync(NULL, fc.addr, fc.size, DMA_BIDIRECTIONAL);
 			}
 			break;
-	edefault:
+	    default:
 			dev_err(ipu->dev, "invalid command: 0x%08x\n", cmd);
 			ret = -EINVAL;
 	}
@@ -1109,10 +1044,20 @@ static int ipu_probe(struct platform_device *pdev)
 		goto err_get_clk;
 	}
 
+#ifdef CONFIG_SOC_T31
+	ipu->ahb1_gate = clk_get(ipu->dev, "ahb1");
+	if (IS_ERR(ipu->clk)) {
+		ret = dev_err(&pdev->dev, "ipu clk get failed!\n");
+		goto err_get_clk;
+	}
+#endif
+
 	dev_set_drvdata(&pdev->dev, ipu);
 
+	__stop_ipu();
 	__reset_ipu();
-	ret = misc_register(&ipu->misc_dev);
+
+    ret = misc_register(&ipu->misc_dev);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "register misc device failed!\n");
 		goto err_set_drvdata;

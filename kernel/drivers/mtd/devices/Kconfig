@@ -77,9 +77,28 @@ config MTD_JZ_SFC_NORFLASH
 	bool "Support ingenic sfc-mtd"
 	help
 		nothing
+
+config MTD_JZ_SFC
+	tristate "Ingenic JZ series SFC driver"
+	depends on  MACH_XBURST
+	help
+		SFC driver for Ingenic JZ series SoCs
+
+config MTD_JZ_SFC_NOR
+	tristate "Ingenic JZ SFC nor"
+	depends on MTD_JZ_SFC
+	help
+		SFC driver for Ingenic JZ sfc nor
+
+config MTD_JZ_SFC_NAND
+	tristate "Ingenic JZ SFC nand"
+	depends on MTD_JZ_SFC
+	help
+		SFC driver for Ingenic JZ sfc nand
+
 config SFC_DMA
 	bool "used dma"
-	depends on MTD_JZ_SFC_NORFLASH
+	depends on (MTD_JZ_SFC_NOR || MTD_JZ_SFC_NORFLASH)
 	help
 		used dma
 
@@ -87,28 +106,28 @@ config SFC_SPEED
     int "JZ SFC speed in MHZ"
 	range 10 200
 	default 50
-	depends on MTD_JZ_SFC_NORFLASH
+	depends on (MTD_JZ_SFC || MTD_JZ_SFC_NORFLASH)
 	help
 	    Select sfc speed.
 		Examples:
 			50 =>  50 MHZ
 
-if MTD_JZ_SFC_NORFLASH
+if (MTD_JZ_SFC || MTD_JZ_SFC_NORFLASH)
 
 choice
 	prompt "sfc Mode"
 	help
 	  Select sfc Mode
 
-config SPI_STARDARD
+config SPI_STANDARD
 	bool "standard spi mode"
-	depends on MTD_JZ_SFC_NORFLASH
+	depends on (MTD_JZ_SFC || MTD_JZ_SFC_NORFLASH)
 	help
 	  Say Y here to enable spi STANDARD MODE
 
 config SPI_QUAD
 	bool "quad spi mode"
-	depends on MTD_JZ_SFC_NORFLASH
+	depends on (MTD_JZ_SFC || MTD_JZ_SFC_NORFLASH)
 	help
 	  Say Y Here to enable spi QUAD MODE
 endchoice

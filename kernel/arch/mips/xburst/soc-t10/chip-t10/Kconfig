@@ -2,12 +2,12 @@
 choice
 	prompt "Platform type"
 	depends on CHIP_T10
-	default PLATFORM_ISVP
+	default PLATFORM_T10_ISVP
 
 config BOARD_MUSCA
 	bool "Musca"
 
-config PLATFORM_ISVP
+config PLATFORM_T10_ISVP
 	bool "isvp"
 
 endchoice
@@ -15,13 +15,13 @@ endchoice
 config PRODUCT_NAME
 	string
 	default "musca" if BOARD_MUSCA
-	default "isvp" if PLATFORM_ISVP
+	default "isvp" if PLATFORM_T10_ISVP
 
 
 if BOARD_MUSCA
 source "arch/mips/xburst/soc-t10/chip-t10/musca/Kconfig"
 endif
 
-if PLATFORM_ISVP
+if PLATFORM_T10_ISVP
 source "arch/mips/xburst/soc-t10/chip-t10/isvp/Kconfig"
 endif

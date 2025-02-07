@@ -1102,9 +1102,8 @@ static void cdc_ncm_status(struct usbnet *dev, struct urb *urb)
 		 */
 		ctx->connected = le16_to_cpu(event->wValue);
 
-		printk(KERN_INFO KBUILD_MODNAME ": %s: network connection:"
-			" %sconnected\n",
-			ctx->netdev->name, ctx->connected ? "" : "dis");
+		dev_dbg(&ctx->netdev->dev, "network connection: %sconnected\n",
+		ctx->connected ? "" : "dis");
 
 		usbnet_link_change(dev, ctx->connected, 0);
 		if (!ctx->connected)
@@ -1250,6 +1249,19 @@ static const struct usb_device_id cdc_devs[] = {
 		USB_CLASS_COMM,
 		USB_CDC_SUBCLASS_NCM, USB_CDC_PROTO_NONE),
 	  .driver_info = (unsigned long)&wwan_noarp_info,
+	},
+
+	/* ASIX 88772E CDC chips*/
+	{
+		.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
+			| USB_DEVICE_ID_MATCH_PRODUCT
+			| USB_DEVICE_ID_MATCH_INT_INFO,
+		.idVendor               = 0x0b95,
+		.idProduct              = 0x1790,
+		.bInterfaceClass        = USB_CLASS_COMM,
+		.bInterfaceSubClass     = USB_CDC_SUBCLASS_NCM,
+		.bInterfaceProtocol     = USB_CDC_PROTO_NONE,
+		.driver_info = (unsigned long)&cdc_ncm_info,
 	},
 
 	/* Generic CDC-NCM devices */

@@ -258,6 +258,8 @@ LEAF(_init_fpu)
 	li      t3, 0x7ff00000                  # SNaN 2008, DP high word
 2:
 #endif
+	.set	push
+	.set	hardfloat
 	mtc1	t1, $f0
 	mtc1	t1, $f1
 	mtc1	t1, $f2
@@ -290,6 +292,7 @@ LEAF(_init_fpu)
 	mtc1	t1, $f29
 	mtc1	t1, $f30
 	mtc1	t1, $f31
+	.set	pop
 
 #ifdef CONFIG_CPU_MIPS32_R2
 	bgez    t0, 1f                          # 16 / 32 register mode?
@@ -297,6 +300,7 @@ LEAF(_init_fpu)
 	move    t1, t3                          # move SNaN, DP high word
 	.set    push
 	.set    mips64r2
+	.set	hardfloat
 	mthc1   t1, $f0
 	mthc1   t1, $f1
 	mthc1   t1, $f2

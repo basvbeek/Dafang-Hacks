@@ -15,12 +15,14 @@
 #include <linux/pwm.h>
 #include "board_base.h"
 #include <mach/jzssi.h>
+
 struct jz_platform_device
 {
 	struct platform_device *pdevices;
 	void *pdata;
 	int size;
 };
+
 static struct jz_platform_device platform_devices_array[] __initdata = {
 #define DEF_DEVICE(DEVICE, DATA, SIZE)	\
 	{ .pdevices = DEVICE,	\
@@ -102,6 +104,10 @@ static struct jz_platform_device platform_devices_array[] __initdata = {
 
 #ifdef CONFIG_JZ_INTERNAL_CODEC_V12
 	DEF_DEVICE(&jz_codec_device, &codec_data, sizeof(struct snd_codec_data)),
+#endif
+
+#ifdef CONFIG_JZ_TS_DMIC
+	DEF_DEVICE(&mic_device,0,0),
 #endif
 
 #ifdef CONFIG_SND_ALSA_INGENIC

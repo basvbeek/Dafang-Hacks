@@ -1,11 +1,11 @@
 choice
 	prompt "Board type"
-	depends on PLATFORM_ISVP
+	depends on PLATFORM_T10_ISVP
 	default BOARD_MANGO
 
 config BOARD_MANGO
        bool "Mango"
-       depends on PLATFORM_ISVP
+       depends on PLATFORM_T10_ISVP
 
 endchoice
 

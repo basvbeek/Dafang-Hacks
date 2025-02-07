@@ -200,12 +200,17 @@ bad_area_nosemaphore:
 		tsk->thread.error_code = write;
 #if 1
 		printk("do_page_fault() #2: sending SIGSEGV to %s for "
-		       "invalid %s\n%0*lx (epc == %0*lx, ra == %0*lx)\n",
+		       "invalid %s\n%0*lx \n",
 		       tsk->comm,
 		       write ? "write access to" : "read access from",
-		       field, address,
-		       field, (unsigned long) regs->cp0_epc,
-		       field, (unsigned long) regs->regs[31]);
+		       field, address);
+		printk("epc = %0*lx in", field,
+				(unsigned long) regs->cp0_epc);
+		print_vma_addr(" ", regs->cp0_epc);
+		printk("ra  = %0*lx in", field,
+				(unsigned long) regs->regs[31]);
+		print_vma_addr(" ", regs->regs[31]);
+		printk("\n");
 #endif
 		info.si_signo = SIGSEGV;
 		info.si_errno = 0;

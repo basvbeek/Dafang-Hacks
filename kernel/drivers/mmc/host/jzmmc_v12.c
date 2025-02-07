@@ -9,8 +9,8 @@
  * published by the Free Software Foundation.
  */
 
-/* #define VERBOSE_DEBUG */
-
+//#define VERBOSE_DEBUG
+//#define DEBUG
 #include <linux/platform_device.h>
 #include <linux/mmc/host.h>
 #include <linux/mmc/card.h>
@@ -21,8 +21,8 @@
 #include <linux/dma-mapping.h>
 #include <linux/gpio.h>
 #include <linux/clk.h>
+#include <linux/delay.h>
 #include <linux/regulator/consumer.h>
-#include <asm-generic/delay.h>
 #include <mach/jzmmc.h>
 
 #include <linux/init.h>
@@ -34,10 +34,16 @@
 /**
  * MMC driver parameters
  */
+
+static int cd_gpio_pin = -1;
+module_param(cd_gpio_pin, int, 0644);
+MODULE_PARM_DESC(cd_gpio_pin, "Card Detect GPIO pin number");
+
 #define MAX_SEGS		128	/* max count of sg */
-#define TIMEOUT_PERIOD		3000	/* msc operation timeout detect period */
+#define TIMEOUT_PERIOD		500	/* msc operation timeout detect period */
 #define PIO_THRESHOLD		64	/* use pio mode if data length < PIO_THRESHOLD */
 #define CLK_CTRL
+#define IO_SAMPLE_PERIOD_MS	2000
 
 enum {
 	EVENT_CMD_COMPLETE = 0,
@@ -105,10 +111,10 @@ static LIST_HEAD(manual_list);
 struct jzmmc_host {
 	struct jzmmc_platform_data *pdata;
 	struct device		*dev;
-	int 			irq;
+	int				irq;
 	struct clk		*clk;
 	struct clk		*clk_gate;
-	struct regulator 	*power;
+	struct regulator	*power;
 
 	struct mmc_request	*mrq;
 	struct mmc_command	*cmd;
@@ -128,12 +134,17 @@ struct jzmmc_host {
 	unsigned int		cmdat;
 	unsigned int		cmdat_def;
 	unsigned int		index;
-	struct desc_hd 		decshds[MAX_SEGS];
-	enum jzmmc_state 	state;
+	struct desc_hd		decshds[MAX_SEGS];
+	enum jzmmc_state	state;
 	struct list_head	list;
 	spinlock_t		lock;
 	unsigned int		double_enter;
-	int 			timeout_cnt;
+	int				timeout_cnt;
+	u32			sample_time;
+	u32			sample_rdata;
+	u32			sample_wdata;
+	int         timeout_state;
+	struct proc_dir_entry *proc;
 };
 
 #define ERROR_IFLG (				\
@@ -196,7 +207,7 @@ static inline void disable_msc_irq(struct jzmmc_host *host, unsigned long bits)
 #ifndef IT_IS_USED_FOR_DEBUG
 static void jzmmc_dump_reg(struct jzmmc_host *host)
 {
-	dev_info(host->dev,"\nREG dump:\n"
+	dev_vdbg(host->dev,"\nREG dump:\n"
 		 "\tCTRL2\t= 0x%08X\n"
 		 "\tSTAT\t= 0x%08X\n"
 		 "\tCLKRT\t= 0x%08X\n"
@@ -297,6 +308,8 @@ static inline void jzmmc_clk_autoctrl(struct jzmmc_host *host, unsigned int on)
 		if(clk_is_enabled(host->clk))
 			clk_disable(host->clk);
 	}
+
+
 }
 static inline int check_error_status(struct jzmmc_host *host, unsigned int status)
 {
@@ -312,7 +325,7 @@ static int jzmmc_polling_status(struct jzmmc_host *host, unsigned int status)
 {
 	unsigned int cnt = 100 * 1000 * 1000;
 	while(!(msc_readl(host, STAT) & (status | ERROR_STAT))	\
-	      && test_bit(JZMMC_CARD_PRESENT, &host->flags) && (--cnt));
+		  && test_bit(JZMMC_CARD_PRESENT, &host->flags) && (--cnt));
 
 	if (unlikely(!cnt)) {
 		dev_err(host->dev, "polling status(0x%08X) time out, "
@@ -405,7 +418,7 @@ static void jzmmc_state_machine(struct jzmmc_host *host, unsigned int status)
 
 	WARN_ON(host->double_enter++);
 start:
-	dev_dbg(host->dev, "enter state: %d\n", host->state);
+	dev_vdbg(host->dev, "enter state: %d\n", host->state);
 
 	switch (host->state) {
 	case STATE_IDLE:
@@ -418,8 +431,8 @@ start:
 		if (unlikely(check_error_status(host, status) != 0)) {
 			host->state = STATE_ERROR;
 			clear_msc_irq(host, IFLG_CRC_RES_ERR
-				      | IFLG_TIMEOUT_RES
-				      | IFLG_END_CMD_RES);
+					  | IFLG_TIMEOUT_RES
+					  | IFLG_END_CMD_RES);
 			goto start;
 		}
 		jzmmc_command_done(host, mrq->cmd);
@@ -437,9 +450,9 @@ start:
 			break;
 		if (unlikely(check_error_status(host, status) != 0)) {
 			clear_msc_irq(host, IFLG_DATA_TRAN_DONE
-				      | IFLG_CRC_READ_ERR
-				      | IFLG_CRC_WRITE_ERR
-				      | IFLG_TIMEOUT_READ);
+					  | IFLG_CRC_READ_ERR
+					  | IFLG_CRC_WRITE_ERR
+					  | IFLG_TIMEOUT_READ);
 			if (request_need_stop(host->mrq))
 				send_stop_command(host);
 			host->state = STATE_ERROR;
@@ -490,7 +503,7 @@ start:
 		break;
 	}
 
-	dev_dbg(host->dev, "exit state: %d\n", host->state);
+	dev_vdbg(host->dev, "exit state: %d\n", host->state);
 	host->double_enter--;
 }
 
@@ -503,7 +516,7 @@ start:
 	imask = msc_readl(host, IMASK);
 	pending = iflg & ~imask;
 	status = msc_readl(host, STAT);
-	dev_dbg(host->dev, "%s: iflg-0x%08X imask-0x%08X status-0x%08X\n",
+	dev_vdbg(host->dev, "%s: iflg-0x%08X imask-0x%08X status-0x%08X\n",
 		 __func__, iflg, imask, status);
 
 	if (!pending) {
@@ -516,10 +529,10 @@ start:
 	} else if (pending & ERROR_IFLG) {
 		unsigned int mask = ERROR_IFLG;
 
-		dev_dbg(host->dev, "%s: iflg-0x%08X imask-0x%08X status-0x%08X\n",
+		dev_vdbg(host->dev, "%s: iflg-0x%08X imask-0x%08X status-0x%08X\n",
 		 __func__, iflg, imask, status);
 
-		dev_dbg(host->dev, "err%d cmd%d iflg%08X status%08X\n",
+		dev_vdbg(host->dev, "err%d cmd%d iflg%08X status%08X\n",
 			host->state, host->cmd ? host->cmd->opcode : -1, iflg, status);
 
 		if (host->state == STATE_WAITING_RESP)
@@ -536,7 +549,7 @@ start:
 		 * it happens, we add retry here to try to fix the error.
 		 */
 		if ((host->cmd->opcode == 53)
-		    && (status & STAT_CRC_READ_ERROR)) {
+			&& (status & STAT_CRC_READ_ERROR)) {
 			dev_err(host->dev, "cmd53 crc error, retry.\n");
 			host->cmd->error = -1;
 			host->cmd->retries = 1;
@@ -640,8 +653,8 @@ static void jzmmc_submit_dma(struct jzmmc_host *host, struct mmc_data *data)
 	}
 
 	dma_unmap_sg(host->dev, data->sg, data->sg_len,
-		     data->flags & MMC_DATA_WRITE
-		     ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
+			 data->flags & MMC_DATA_WRITE
+			 ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
 
 	dhd->dma_desc->dcmd |= DMACMD_ENDI;
 	dhd->dma_desc->dcmd &= ~DMACMD_LINK;
@@ -721,7 +734,11 @@ static void do_pio_read(struct jzmmc_host *host,
 	for (i = 0; i < cnt / 4; i++) {
 		while (((status = msc_readl(host, STAT))
 			& STAT_DATA_FIFO_EMPTY)
-		       && test_bit(JZMMC_CARD_PRESENT, &host->flags));
+			   && test_bit(JZMMC_CARD_PRESENT, &host->flags)){
+			if(!(in_irq() || in_softirq())){
+				msleep(10);
+			}
+		}
 
 		if (!test_bit(JZMMC_CARD_PRESENT, &host->flags)) {
 			host->data->error = -ENOMEDIUM;
@@ -760,7 +777,11 @@ static void do_pio_write(struct jzmmc_host *host,
 	for (i = 0; i < (cnt / 4); i++) {
 		while (((status = msc_readl(host, STAT))
 			& STAT_DATA_FIFO_FULL)
-		       && test_bit(JZMMC_CARD_PRESENT, &host->flags));
+			   && test_bit(JZMMC_CARD_PRESENT, &host->flags)){
+			if(!(in_irq() || in_softirq())){
+				msleep(10);
+			}
+		}
 
 		if(!test_bit(JZMMC_CARD_PRESENT, &host->flags)) {
 			host->data->error = -ENOMEDIUM;
@@ -892,10 +913,10 @@ static void jzmmc_command_start(struct jzmmc_host *host, struct mmc_command *cmd
 
 	switch (mmc_resp_type(cmd)) {
 #define _CASE(S,D) case MMC_RSP_##S: cmdat |= CMDAT_RESPONSE_##D; break
-		_CASE(R1, R1); 	/* r1 = r5,r6,r7 */
+		_CASE(R1, R1);	/* r1 = r5,r6,r7 */
 		_CASE(R1B, R1);
 		_CASE(R2, R2);
-		_CASE(R3, R3); 	/* r3 = r4 */
+		_CASE(R3, R3);	/* r3 = r4 */
 	default:
 		break;
 #undef _CASE
@@ -941,8 +962,16 @@ static void jzmmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	 * It never happens in design, but we add BUG_ON here to prevent it.
 	 */
 	if ((host->state != STATE_IDLE) && (mrq->data != NULL)) {
-		dev_warn(host->dev, "operate in non-idle state\n");
+		dev_warn(host->dev, "operate in non-idle state = host->state\n", host->state);
 		WARN_ON(1);
+	}
+
+	/* if timeout or error, do not try again */
+	if(host->timeout_state) {
+		dev_err(host->dev, "last operate timeout over 3000ms, so do not try,please change sd card!!!\n");
+		mrq->cmd->error = -ENOMEDIUM;
+		mmc_request_done(mmc, mrq);
+		return;
 	}
 
 	host->mrq = mrq;
@@ -950,17 +979,17 @@ static void jzmmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	host->cmd = mrq->cmd;
 
 	if (host->data)
-		dev_dbg(host->dev, "op:%d arg:0x%08X sz:%uk\n",
+		dev_vdbg(host->dev, "op:%d arg:0x%08X sz:%uk\n",
 			 host->cmd->opcode, host->cmd->arg,
 			 host->data->blocks >> 1);
 	else
-		dev_dbg(host->dev, "op:%d\n", host->cmd->opcode);
+		dev_vdbg(host->dev, "op:%d\n", host->cmd->opcode);
 
 	host->cmdat = host->cmdat_def;
 
 	if(host->data) {
 		if ((host->data->sg_len == 1)
-		    && (sg_dma_len(host->data->sg)) < PIO_THRESHOLD) {
+			&& (sg_dma_len(host->data->sg)) < PIO_THRESHOLD) {
 			enable_pio_mode(host);
 		}
 
@@ -1028,10 +1057,12 @@ static void jzmmc_request_timeout(unsigned long data)
 		dev_err(host->dev, "Descriptor dump:\n");
 		for (i = 0; i < MAX_SEGS; i++) {
 			unsigned int *desc = (unsigned int *)host->decshds[i].dma_desc;
-			dev_err(host->dev, "\t%03d\t nda=%08X da=%08X len=%08X dcmd=%08X\n",
+			dev_vdbg(host->dev, "\t%03d\t nda=%08X da=%08X len=%08X dcmd=%08X\n",
 				i, *desc, *(desc+1), *(desc+2), *(desc+3));
 		}
 		dev_err(host->dev, "\n");
+		/* force remove card */
+		host->timeout_state = 1;
 	}
 
 	if (host->mrq) {
@@ -1079,25 +1110,46 @@ static void set_pin_status(struct jzmmc_pin *pin, int enable)
 
 	if (pin->enable_level == LOW_ENABLE)
 		enable = !enable;
-	gpio_set_value(pin->num, enable);
+	gpio_direction_output(pin->num, enable);
 }
 
+extern struct proc_dir_entry * jz_proc_mkdir(char *s);
+extern void proc_remove(struct proc_dir_entry *de);
 static void jzmmc_detect_change(unsigned long data)
 {
 	struct jzmmc_host *host = (struct jzmmc_host *)data;
 	bool			present;
 	bool			present_old;
-
+	dev_vdbg(host->dev, "enter jzmmc detect change!\n");
+	
+	host->mmc->actual_clock = host->pdata->max_freq;
 	present = get_pin_status(&host->pdata->gpio->cd);
 	present_old = test_bit(JZMMC_CARD_PRESENT, &host->flags);
 
 	if ((present != present_old) || (present_old && host->mmc->card)) {
 		if (present && present_old)
 			dev_warn(host->dev, "rapidly remove\n");
-		else
+		else{
 			dev_notice(host->dev, "card %s, state=%d\n",
 				   present ? "inserted" : "removed", host->state);
-
+			if(host->index == 0){
+				if(present){
+					if(!host->proc){
+						host->proc = jz_proc_mkdir("mmc0");
+						if(!host->proc){
+							printk("Failed to create mmc0 proc\n");
+						}
+					}
+				}else {
+					if(host->proc){
+						proc_remove(host->proc);
+						host->proc = NULL;
+					}
+				}
+			}
+		}
+		/*if take timeout, then remove card,could clear the state */
+		host->timeout_state = 0;
 		if (!present || present_old) {
 			clear_bit(JZMMC_CARD_PRESENT, &host->flags);
 			tasklet_disable(&host->tasklet);
@@ -1227,12 +1279,15 @@ static inline void jzmmc_power_on(struct jzmmc_host *host)
 	} else if (host->pdata->gpio) {
 		set_pin_status(&host->pdata->gpio->pwr, 1);
 	}
+	msleep(10);
+	jzgpio_set_func(GPIO_PORT_B, GPIO_FUNC_0, 0x3f);
 }
 
 static inline void jzmmc_power_off(struct jzmmc_host *host)
 {
 	dev_vdbg(host->dev, "power_off\n");
 
+	jzgpio_set_func(GPIO_PORT_B, GPIO_OUTPUT0, 0x3f);
 	if (!IS_ERR(host->power)) {
 		if(regulator_is_enabled(host->power))
 			regulator_disable(host->power);
@@ -1261,7 +1316,7 @@ static int jzmmc_get_card_detect(struct mmc_host *mmc)
 
 	dev_vdbg(host->dev, "get card present\n");
 	if ((host->pdata->removal == NONREMOVABLE)
-	    || (host->pdata->removal == MANUAL)) {
+		|| (host->pdata->removal == MANUAL)) {
 		return test_bit(JZMMC_CARD_PRESENT, &host->flags);
 	}
 
@@ -1391,8 +1446,8 @@ static const struct mmc_host_ops jzmmc_ops = {
  * Sysfs interface for recovery and soft-card-detect.
  */
 static ssize_t jzmmc_partitions_show(struct device *dev,
-				     struct device_attribute *attr,
-				     char *buf)
+					 struct device_attribute *attr,
+					 char *buf)
 {
 	struct jzmmc_platform_data *pdata = dev->platform_data;
 	ssize_t count = 0;
@@ -1416,8 +1471,8 @@ static ssize_t jzmmc_partitions_show(struct device *dev,
 }
 
 static ssize_t jzmmc_permission_set(struct device *dev,
-				    struct device_attribute *attr,
-				    const char *buf, size_t count)
+					struct device_attribute *attr,
+					const char *buf, size_t count)
 {
 	struct jzmmc_platform_data *pdata = dev->platform_data;
 	struct jzmmc_host *host = dev_get_drvdata(dev);
@@ -1453,12 +1508,12 @@ static ssize_t jzmmc_present_show(struct device *dev,
 
 static ssize_t jzmmc_present_store(struct device *dev,
 				   struct device_attribute *attr,
-				    const char *buf, size_t count)
+					const char *buf, size_t count)
 {
 	struct jzmmc_platform_data *pdata = dev->platform_data;
 	struct jzmmc_host *host = dev_get_drvdata(dev);
 
-	if ((buf == NULL) || (pdata->removal != NONREMOVABLE)) {
+	if (buf == NULL) {
 		dev_err(host->dev, "can't set present\n");
 		return count;
 	}
@@ -1510,6 +1565,7 @@ static void __init jzmmc_host_init(struct jzmmc_host *host, struct mmc_host *mmc
 	mmc->f_max = pdata->max_freq;
 	mmc->ocr_avail = pdata->ocr_avail;
 	mmc->caps |= pdata->capacity;
+	mmc->caps2 |= MMC_CAP2_NO_PRESCAN_POWERUP;
 	mmc->pm_flags |= pdata->pm_flags;
 #ifdef CONFIG_MMC_BLOCK_BOUNCE
 	mmc->max_blk_count = 65535;
@@ -1524,7 +1580,7 @@ static void __init jzmmc_host_init(struct jzmmc_host *host, struct mmc_host *mmc
 
 	host->mmc = mmc;
 	setup_timer(&host->request_timer, jzmmc_request_timeout,
-		    (unsigned long)host);
+			(unsigned long)host);
 	mmc_add_host(mmc);
 }
 
@@ -1571,32 +1627,47 @@ static int __init jzmmc_msc_init(struct jzmmc_host *host)
 		CMDAT_TTRG_LESS_16 |			\
 		CMDAT_BUS_WIDTH_1BIT;
 
-	ret = request_irq(host->irq, jzmmc_irq, IRQF_DISABLED,
-			  dev_name(host->dev), host);
+	ret = request_irq(host->irq, jzmmc_irq, IRQF_DISABLED | IRQF_SHARED,
+		          dev_name(host->dev), host);
 
 	return ret;
 }
+
+static int host_count = 0;
 
 static int __init jzmmc_gpio_init(struct jzmmc_host *host)
 {
 	struct card_gpio *card_gpio = host->pdata->gpio;
 	int ret = 0;
+	int cd_port, cd_pin;
+
+	jz_gpio_set_func(36, GPIO_OUTPUT0);
+
+	if (host_count == 0 && cd_gpio_pin >= 0) {
+		card_gpio->cd.num = cd_gpio_pin;
+	}
 
 	if (card_gpio) {
+		if (card_gpio->cd.num > 0)
+		{
+			cd_port = card_gpio->cd.num / 32;
+			cd_pin =  card_gpio->cd.num % 32;
+			jzgpio_ctrl_pull(cd_port,0,cd_pin); //Disabled MMC detect gpio Pull-down function
+		}
 		if (card_gpio->cd.num > 0 && gpio_request_one(card_gpio->cd.num,
-				     GPIOF_DIR_IN, "mmc_detect")) {
+					 GPIOF_DIR_IN, "mmc_detect")) {
 			dev_err(host->dev, "no detect pin available\n");
 			card_gpio->cd.num = -EBUSY;
 		}
 
 		if (card_gpio->wp.num > 0 && gpio_request_one(card_gpio->wp.num,
-				     GPIOF_DIR_IN, "mmc_wp")) {
+					 GPIOF_DIR_IN, "mmc_wp")) {
 			dev_err(host->dev, "no WP pin available\n");
 			card_gpio->wp.num = -EBUSY;
 		}
 
 		if (card_gpio->rst.num > 0 && gpio_request_one(card_gpio->rst.num,
-				     GPIOF_DIR_OUT, "mmc_rst")) {
+					 GPIOF_DIR_OUT, "mmc_rst")) {
 			dev_err(host->dev, "no RST pin available\n");
 			card_gpio->rst.num = -EBUSY;
 		}
@@ -1605,9 +1676,9 @@ static int __init jzmmc_gpio_init(struct jzmmc_host *host)
 				dev_err(host->dev, "no PWR pin available\n");
 				card_gpio->pwr.num = -EBUSY;
 			} else {
-				gpio_direction_output(card_gpio->pwr.num,
-						      card_gpio->pwr.enable_level
-						      ? 0 : 1);
+				int present = get_pin_status(&card_gpio->cd);
+				set_pin_status(&card_gpio->pwr, present);
+				gpio_export(card_gpio->pwr.num, 0);
 			}
 		}
 	}
@@ -1619,10 +1690,11 @@ static int __init jzmmc_gpio_init(struct jzmmc_host *host)
 	case REMOVABLE:
 		if (gpio_is_valid(card_gpio->cd.num)) {
 			setup_timer(&host->detect_timer, jzmmc_detect_change,
-				    (unsigned long)host);
+					(unsigned long)host);
 			ret = request_irq(gpio_to_irq(host->pdata->gpio->cd.num),
 					  jzmmc_detect_interrupt,
-					  IRQF_TRIGGER_RISING
+					  IRQF_SHARED
+					  | IRQF_TRIGGER_RISING
 					  | IRQF_TRIGGER_FALLING
 					  | IRQF_DISABLED ,
 					  "mmc-insert-detect", host);
@@ -1635,13 +1707,15 @@ static int __init jzmmc_gpio_init(struct jzmmc_host *host)
 			jzmmc_clk_autoctrl(host, 1);
 			if(!timer_pending(&host->detect_timer)){
 				disable_irq_nosync(gpio_to_irq(host->pdata->gpio->cd.num));
-				mod_timer(&host->detect_timer, jiffies);
+				mod_timer(&host->detect_timer, jiffies + msecs_to_jiffies(500));
 			}
 
 		} else {
-			dev_err(host->dev, "card-detect pin must be valid "
-				"when host->pdata->removal = 1, errno=%d\n",
+			dev_err(host->dev, "card-detect gpio pin not specified, card-detect disabled, enabling card_present as default.  Error: "
+				"host->pdata->removal = 1, errno=%d\n",
 				host->pdata->gpio->cd.num);
+				jzmmc_clk_autoctrl(host, 1);
+				set_bit(JZMMC_CARD_PRESENT, &host->flags);
 		}
 
 		break;
@@ -1655,6 +1729,9 @@ static int __init jzmmc_gpio_init(struct jzmmc_host *host)
 		set_bit(JZMMC_CARD_PRESENT, &host->flags);
 		break;
 	}
+
+	// Increment the host count
+	host_count++;
 
 	return ret;
 }
@@ -1756,6 +1833,8 @@ static int __init jzmmc_probe(struct platform_device *pdev)
 	if (ret < 0)
 		goto err_gpio_init;
 
+	host->proc = NULL;
+
 	jzmmc_host_init(host, mmc);
 	ret = sysfs_create_group(&pdev->dev.kobj, &jzmmc_attr_group);
 	if (ret < 0)
@@ -1819,8 +1898,8 @@ static int jzmmc_suspend(struct platform_device *dev, pm_message_t state)
 		ret = mmc_suspend_host(host->mmc);
 
 		/* if(clk_is_enabled(host->clk)) { */
-		/* 	clk_disable(host->clk); */
-		/* 	clk_disable(host->clk_gate); */
+		/*	clk_disable(host->clk); */
+		/*	clk_disable(host->clk_gate); */
 		/* } */
 	}
 	return ret;
@@ -1834,9 +1913,9 @@ static int jzmmc_resume(struct platform_device *dev)
 	if (host->mmc->card && host->mmc->card->type != MMC_TYPE_SDIO) {
 
 		/* if (test_bit(JZMMC_CARD_PRESENT, &host->flags)) { */
-		/* 	clk_enable(host->clk); */
-		/* 	clk_enable(host->clk_gate); */
-		/* 	jzmmc_reset(host); */
+		/*	clk_enable(host->clk); */
+		/*	clk_enable(host->clk_gate); */
+		/*	jzmmc_reset(host); */
 		/* } */
 		ret = mmc_resume_host(host->mmc);
 	}

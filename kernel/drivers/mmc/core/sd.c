@@ -995,11 +995,13 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
 		/*
 		 * Attempt to change to high-speed (if supported)
 		 */
-		err = mmc_sd_switch_hs(card);
-		if (err > 0)
-			mmc_sd_go_highspeed(card);
-		else if (err)
-			goto free_card;
+		if(host->actual_clock > 25000000) {
+			err = mmc_sd_switch_hs(card);
+			if (err > 0)
+				mmc_sd_go_highspeed(card);
+			else if (err)
+				goto free_card;
+		}
 
 		/*
 		 * Set bus speed.

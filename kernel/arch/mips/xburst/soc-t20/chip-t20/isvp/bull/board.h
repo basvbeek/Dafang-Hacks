@@ -34,7 +34,7 @@
 /* ****************************GPIO MMC START******************************** */
 #define GPIO_MMC_RST_N			-1
 #define GPIO_MMC_RST_N_LEVEL	LOW_ENABLE
-#define GPIO_MMC_CD_N			GPIO_PB(27)
+#define GPIO_MMC_CD_N			-1
 #define GPIO_MMC_CD_N_LEVEL		LOW_ENABLE
 #define GPIO_MMC_PWR			-1
 #define GPIO_MMC_PWR_LEVEL		HIGH_ENABLE
@@ -96,8 +96,8 @@
 /* ****************************GPIO GMAC END********************************* */
 
 /* ****************************GPIO WIFI START******************************* */
-#define WL_WAKE_HOST	(-1)//GPIO_PB(28)
-#define WL_REG_EN	GPIO_PB(30)
+#define WL_WAKE_HOST	GPIO_PB(28)
+#define WL_REG_EN	GPIO_PC(16)
 #define WL_MMC_NUM	1 //sdio use MMC1
 
 #define WLAN_PWR_EN	(-1)

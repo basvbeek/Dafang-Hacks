@@ -18,7 +18,7 @@
 #include <linux/interrupt.h>
 #include <linux/dmaengine.h>
 
-#define NR_DMA_CHANNELS 	32
+#define NR_DMA_CHANNELS 32
 
 #define CH_DSA	0x00
 #define CH_DTA	0x04
@@ -195,23 +195,23 @@ struct jzdma_channel {
 #define CHFLG_SLAVE		BIT(0)
 	unsigned short		flags;
 	unsigned short		status;
-	unsigned long 		dcs_saved;
-	struct dma_desc		*desc;
-	dma_addr_t 		desc_phys;
-	unsigned short		desc_nr;
-	unsigned short		desc_max;
-	struct scatterlist 	*sgl;
-	unsigned long	 	sg_len;
-	unsigned short		last_sg;
+	unsigned long dcs_saved;
+	struct dma_desc *desc;
+	dma_addr_t desc_phys;
+	unsigned short desc_nr;
+	unsigned short desc_max;
+	struct scatterlist *sgl;
+	unsigned long sg_len;
+	unsigned short last_sg;
 #define FAKECYCLIC_ACTIVE (1 << 15)
 #define FAKECYCLIC_POSSIBLE (1 << 14)
 #define FAKECYCLIC_IDX 0x3fff
 	unsigned short fake_cyclic;
-	unsigned long 		tx_dcm_def;
-	unsigned long 		rx_dcm_def;
-	struct dma_slave_config	*config;
-	void __iomem		*iomem;
-	struct jzdma_master	*master;
+	unsigned long tx_dcm_def;
+	unsigned long rx_dcm_def;
+	struct dma_slave_config *config;
+	void __iomem *iomem;
+	struct jzdma_master *master;
 };
 
 enum channel_status {
@@ -219,15 +219,15 @@ enum channel_status {
 };
 
 struct jzdma_master {
-	struct device		*dev;
-	void __iomem   		*iomem;
-	struct clk		*clk;
-	int 			irq;
-	int                     irq_pdmam;   /* irq_pdmam for PDMAM irq */
-	struct dma_device	dma_device;
-	enum jzdma_type		*map;
-	struct irq_chip		irq_chip;
-	struct jzdma_channel	channel[NR_DMA_CHANNELS];
+	struct device *dev;
+	void __iomem *iomem;
+	struct clk *clk;
+	int irq;
+	int irq_pdmam;   /* irq_pdmam for PDMAM irq */
+	struct dma_device dma_device;
+	enum jzdma_type *map;
+	struct irq_chip irq_chip;
+	struct jzdma_channel channel[NR_DMA_CHANNELS];
 };
 
 static inline struct device *chan2dev(struct dma_chan *chan)
@@ -243,4 +243,3 @@ static inline struct jzdma_channel *to_jzdma_chan(struct dma_chan *chan)
 void jzdma_dump(struct dma_chan *chan);
 
 #endif
-

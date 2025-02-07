@@ -43,47 +43,42 @@ struct platform_device	bcm_power_platform_device = {
 static void set_pin_status(int bt_power_state)
 {
 #if 0
-	if(bt_power_state){
-		/*set UART0_RXD, UART0_CTS_N ,2 pins to input nopull*/
+	if (bt_power_state) {
+		/*set UART0_RXD, UART0_CTS_N, 2 pins to input nopull*/
 		jzgpio_set_func(GPIO_PORT_F, GPIO_INPUT, 0x3);
 		/*set UART0_TXD to output low*/
 		jzgpio_set_func(GPIO_PORT_F, GPIO_INPUT, 0x8);
 
-		/*set PCM0_DO ,PCM0_CLK, PCM0_SYN ,PCM0_DI 4 pins to OUTPUT_LOW*/
+		/*set PCM0_DO, PCM0_CLK, PCM0_SYN, PCM0_DI 4 pins to OUTPUT_LOW*/
 		jzgpio_set_func(GPIO_PORT_F, GPIO_OUTPUT0, 0xF << 12);
 	}else{
 #if defined(GPIO_BT_RST_N)
-		jzgpio_set_func(GPIO_BT_RST_N / 32, GPIO_OUTPUT0,
-				1 << (GPIO_BT_RST_N % 32));
+		jzgpio_set_func(GPIO_BT_RST_N / 32, GPIO_OUTPUT0, 1 << (GPIO_BT_RST_N % 32));
 #endif
-		jzgpio_set_func(GPIO_BT_INT / 32, GPIO_OUTPUT0,
-				1 << (GPIO_BT_INT % 32));
-		jzgpio_set_func(GPIO_BT_WAKE / 32, GPIO_OUTPUT0,
-				1 << (GPIO_BT_WAKE % 32));
+		jzgpio_set_func(GPIO_BT_INT / 32, GPIO_OUTPUT0, 1 << (GPIO_BT_INT % 32));
+		jzgpio_set_func(GPIO_BT_WAKE / 32, GPIO_OUTPUT0, 1 << (GPIO_BT_WAKE % 32));
 
-		/*set BT_RST_N ,BT_INT, BT_WAKE , BT_REG_ON 4 pins to OUTPUT_LOW*/
-		jzgpio_set_func(GPIO_BT_REG_ON / 32, GPIO_OUTPUT0,
-				1 << (GPIO_BT_REG_ON % 32));
+		/*set BT_RST_N, BT_INT, BT_WAKE, BT_REG_ON 4 pins to OUTPUT_LOW*/
+		jzgpio_set_func(GPIO_BT_REG_ON / 32, GPIO_OUTPUT0, 1 << (GPIO_BT_REG_ON % 32));
 
 		/*set UART0_RXD, UART0_CTS_N, UART0_RTS_N 3 pins to OUTPUT_LOW*/
-		jzgpio_set_func(GPIO_PORT_F, GPIO_OUTPUT0 , 0x7);
+		jzgpio_set_func(GPIO_PORT_F, GPIO_OUTPUT0, 0x7);
 
 		/*set UART0_TXD to INPUT_NOPULL*/
-		jzgpio_set_func(GPIO_PORT_F, GPIO_INPUT , 1 << 3);
+		jzgpio_set_func(GPIO_PORT_F, GPIO_INPUT, 1 << 3);
 
-		/*set PCM0_DO ,PCM0_CLK, PCM0_SYN ,PCM0_DI 4 pins to OUTPUT_LOW*/
-		jzgpio_set_func(GPIO_PORT_F, GPIO_OUTPUT0 , 0xF << 12);
+		/*set PCM0_DO, PCM0_CLK, PCM0_SYN, PCM0_DI 4 pins to OUTPUT_LOW*/
+		jzgpio_set_func(GPIO_PORT_F, GPIO_OUTPUT0, 0xF << 12);
 	}
 #endif
 }
 
 static void restore_pin_status(int bt_power_state)
 {
-
 	/*set UART0_RXD, UART0_CTS_N, UART0_RTS_N, UART0_TXD to FUNC*/
 	jzgpio_set_func(BLUETOOTH_UART_GPIO_PORT, BLUETOOTH_UART_GPIO_FUNC, BLUETOOTH_UART_FUNC_SHIFT);
 
-	/*set PCM0_DO ,PCM0_CLK, PCM0_SYN ,PCM0_DI 4 pins to FUNC*/
+	/*set PCM0_DO, PCM0_CLK, PCM0_SYN, PCM0_DI 4 pins to FUNC*/
 	//jzgpio_set_func(GPIO_PORT_F, GPIO_FUNC_0, 0xF << 12);
 }
 
@@ -109,16 +104,16 @@ static struct bt_rfkill_platform_data  bt_gpio_data = {
 };
 
 struct platform_device bt_power_device  = {
-	.name = "bt_power" ,
-	.id = -1 ,
+	.name = "bt_power", 
+	.id = -1, 
 	.dev   = {
 		.platform_data = &bt_gpio_data,
 	},
 };
 
 struct platform_device bluesleep_device = {
-	.name = "bluesleep" ,
-	.id = -1 ,
+	.name = "bluesleep", 
+	.id = -1, 
 	.dev   = {
 		.platform_data = &bt_gpio_data,
 	},
@@ -128,7 +123,7 @@ struct platform_device bluesleep_device = {
 #ifdef CONFIG_BT_BLUEDROID_SUPPORT
 int bluesleep_tty_strcmp(const char* name)
 {
-	if(!strcmp(name,BLUETOOTH_UPORT_NAME)){
+	if (!strcmp(name, BLUETOOTH_UPORT_NAME)) {
 		return 0;
 	} else {
 		return -1;
@@ -148,7 +143,7 @@ struct bcm2079x_platform_data bcm2079x_pdata = {
 	.power_down_gpio_set = NULL,
 	.power_on_gpio_set = NULL,
 };
-#endif	/*CONFIG_BCM2079X_NFC*/
+#endif /*CONFIG_BCM2079X_NFC*/
 
 /*For WiFi*/
 #ifdef CONFIG_WLAN
@@ -161,8 +156,8 @@ extern int bcm_power_on(void);
 extern int bcm_power_down(void);
 
 struct wifi_data {
-	struct wake_lock                wifi_wake_lock;
-	int                             wifi_reset;
+	struct wake_lock    wifi_wake_lock;
+	int                 wifi_reset;
 };
 
 struct resource wlan_resources[] = {
@@ -188,7 +183,7 @@ static struct wifi_data bcm_data;
 #if 1
 static void wifi_le_set_io(void)
 {
-	/*when wifi is down, set WL_MSC1_D0 , WL_MSC1_D1, WL_MSC1_D2, WL_MSC1_D3,
+	/*when wifi is down, set WL_MSC1_D0, WL_MSC1_D1, WL_MSC1_D2, WL_MSC1_D3,
 	  WL_MSC1_CLK, WL_MSC1_CMD pins to INPUT_NOPULL status*/
 	jzgpio_set_func(GPIO_PORT_C, GPIO_INPUT, 0x1 << 2);
 	jzgpio_set_func(GPIO_PORT_C, GPIO_INPUT, 0x1 << 3);
@@ -200,7 +195,7 @@ static void wifi_le_set_io(void)
 
 static void wifi_le_restore_io(void)
 {
-	/*when wifi is up ,set WL_MSC1_D0 , WL_MSC1_D1, WL_MSC1_D2, WL_MSC1_D3,
+	/*when wifi is up, set WL_MSC1_D0, WL_MSC1_D1, WL_MSC1_D2, WL_MSC1_D3,
 		 WL_MSC1_CLK, WL_MSC1_CMD pins to GPIO_FUNC_0*/
 	jzgpio_set_func(GPIO_PORT_C, GPIO_FUNC_0, 0x1 << 2);
 	jzgpio_set_func(GPIO_PORT_C, GPIO_FUNC_0, 0x1 << 3);
@@ -232,21 +227,20 @@ int bcm_wlan_init(void)
 #endif
 	bcm_data.wifi_reset = reset;
 
-
 	return 0;
 }
 EXPORT_SYMBOL(bcm_wlan_init);
 
 int bcm_customer_wlan_get_oob_irq(void)
 {
-  int host_oob_irq = 0;
-  //printk("GPIO(WL_HOST_WAKE) = EXYNOS4_GPX0(7) = %d\n", GPIO_PA(9));
-  gpio_request(WL_WAKE_HOST, "oob irq");
-  host_oob_irq = gpio_to_irq(WL_WAKE_HOST);
-  // gpio_direction_input(GPIO_PA(9));
-  printk("host_oob_irq: %d \r\n", host_oob_irq);
+	int host_oob_irq = 0;
+	//printk("GPIO(WL_HOST_WAKE) = EXYNOS4_GPX0(7) = %d\n", GPIO_PA(9));
+	gpio_request(WL_WAKE_HOST, "oob irq");
+	host_oob_irq = gpio_to_irq(WL_WAKE_HOST);
+	// gpio_direction_input(GPIO_PA(9));
+	printk("host_oob_irq: %d \r\n", host_oob_irq);
 
-  return host_oob_irq;
+	return host_oob_irq;
 }
 EXPORT_SYMBOL(bcm_customer_wlan_get_oob_irq);
 

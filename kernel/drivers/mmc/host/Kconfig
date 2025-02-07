@@ -6,7 +6,7 @@ comment "MMC/SD/SDIO Host Controller Drivers"
 
 config JZMMC_V12
 	tristate "Ingenic(XBurst)  MMC/SD Card Controller(MSC) v1.2 support"
-	depends on SOC_M200 || SOC_T15 || SOC_T10 || SOC_T20
+	depends on SOC_M200 || SOC_T10 || SOC_T15 || SOC_T20 || SOC_T21 || SOC_T23 || SOC_T30 || SOC_T31
 	help
 	  This selects the Ingenic XBurst SD/MMC Card Controller v1.2.
 	  If you have platform with a SD/Multimedia Card slot and compact
@@ -35,6 +35,15 @@ config JZMMC_V12_MMC0_PB_4BIT
 	bool "GPIO B, data with 4 bit"
 endchoice
 
+config JZMMC_V12_MMC0_1BIT
+    bool "Restrict host controller to 1 bit bus width"
+    default n
+    help
+      Some devices (Galayou G2 T23N) apparently do not support 4-bit data transfers.
+      Enabling this option will restrict the host to using just 1-bit data
+      transfers.
+      If unsure, say N.
+
 config MMC0_MAX_FREQ
 	int "msc0 max frequency"
 	depends on JZMMC_V12_MMC0
@@ -60,8 +69,8 @@ choice
 	default JZMMC_V12_MMC1_PC_4BIT
 config JZMMC_V12_MMC1_PD_4BIT
 	bool "GPIO D, Data width 4 bit"
-config JZMMC_V12_MMC1_PE_4BIT
-	bool "GPIO E, Data width 4 bit"
+config JZMMC_V12_MMC1_PB_4BIT
+	bool "GPIO B, Data width 4 bit"
 config JZMMC_V12_MMC1_PC_4BIT
 	bool "GPIO C, Data width 4 bit"
 endchoice

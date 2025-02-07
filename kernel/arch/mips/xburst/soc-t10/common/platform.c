@@ -45,6 +45,10 @@ struct jz_gpio_func_def platform_devio_array[] = {
 #ifdef CONFIG_I2C1_PB25_PB26
 	I2C1_PORTB,
 #endif
+
+#ifndef CONFIG_VIDEO_V4L2
+	MCLK_PORTA,
+#endif
 #ifdef CONFIG_SOC_MCLK
 	MCLK_PORTA,
 #endif
@@ -81,7 +85,7 @@ struct jz_gpio_func_def platform_devio_array[] = {
 	OTG_DRVVUS,
 #endif
 
-#ifdef CONFIG_SPI0_PC
+#ifdef CONFIG_JZ_SPI0_PC
 	SSI0_PORTC,
 #endif
 
@@ -93,7 +97,7 @@ struct jz_gpio_func_def platform_devio_array[] = {
 #endif
 #endif
 
-#ifdef CONFIG_JZ_DMIC_V12
+#if defined(CONFIG_JZ_DMIC_V12) || defined (CONFIG_JZ_TS_DMIC)
 	DMIC_PORTC,
 #endif
 
@@ -553,6 +557,37 @@ struct platform_device jz_codec_device = {
 #endif
 #endif
 
+#if defined(CONFIG_JZ_TS_DMIC)
+static struct resource mic_resources[] = {
+    /**
+     * dmic resource
+     */
+    [0] = {
+        .start          = DMIC_IOBASE,
+        .end            = DMIC_IOBASE + 0x70 -1,
+        .flags          = IORESOURCE_MEM,
+    },
+    [1] = {
+        .start          = IRQ_DMIC,
+        .end            = IRQ_DMIC,
+        .flags          = IORESOURCE_IRQ,
+    },
+    [2] = {
+        .start          = JZDMA_REQ_I2S1,
+        .end            = JZDMA_REQ_I2S1,
+        .flags          = IORESOURCE_DMA,
+    },
+
+};
+
+struct platform_device mic_device = {
+    .name           = "dmic",
+    .id             = -1,
+    .resource       = mic_resources,
+    .num_resources  = ARRAY_SIZE(mic_resources),
+};
+#endif
+
 /* only for ALSA platform devices */
 #if defined(CONFIG_SND) && defined(CONFIG_SND_ALSA_INGENIC)
 static u64 jz_asoc_dmamask =  ~(u64)0;
@@ -613,7 +648,6 @@ struct platform_device jz_alsa_device = {
 	.dev = {},
 };
 #endif /* end of ALSA platform devices */
-
 
 static u64 jz_ssi_dmamask =  ~(u32)0;
 #define DEF_SSI(NO)							\
@@ -868,7 +902,10 @@ struct platform_device jz_pwm_sdk_device = {
 
 static struct jzpwm_platform_data jzpwm_pdata = {
 	.pwm_gpio = {
-			GPIO_PB(17),GPIO_PB(18),GPIO_PC(8),GPIO_PC(9),
+			GPIO_PB(17),
+			GPIO_PB(18),
+			GPIO_PC(8),
+			GPIO_PC(9),
 	},
 };
 

@@ -8,35 +8,32 @@
 #include <soc/extal.h>
 #include <soc/cpm.h>
 
-#define USBRDT_VBFIL_LD_EN		25
-#define USBRDT_UTMI_RST		27
-#define USBPCR_TXPREEMPHTUNE		6
-#define USBPCR_POR			22
-#define USBPCR_USB_MODE			31
-#define USBPCR_COMMONONN		25
-#define USBPCR_VBUSVLDEXT		24
-#define USBPCR_VBUSVLDEXTSEL		23
-#define USBPCR_OTG_DISABLE		20
-#define USBPCR_SIDDQ			21
-#define USBPCR_IDPULLUP_MASK		28
-#define OPCR_SPENDN0			7
-#define USBPCR1_USB_SEL			28
-#define USBPCR1_WORD_IF0		19
-#define USBPCR1_WORD_IF1		18
-#define SRBC_USB_SR			12
-#define USBRDT_IDDIG_EN			24
-#define USBRDT_IDDIG_REG		23
+#define OPCR_SPENDN0          7
+#define SRBC_USB_SR           12
+#define USBPCR1_USB_SEL       28
+#define USBPCR1_WORD_IF0      19
+#define USBPCR1_WORD_IF1      18
+#define USBPCR_COMMONONN      25
+#define USBPCR_IDPULLUP_MASK  28
+#define USBPCR_OTG_DISABLE    20
+#define USBPCR_POR            22
+#define USBPCR_SIDDQ          21
+#define USBPCR_TXPREEMPHTUNE  6
+#define USBPCR_USB_MODE       31
+#define USBPCR_VBUSVLDEXT     24
+#define USBPCR_VBUSVLDEXTSEL  23
+#define USBRDT_IDDIG_EN       24
+#define USBRDT_IDDIG_REG      23
+#define USBRDT_UTMI_RST       27
+#define USBRDT_VBFIL_LD_EN    25
 
-
-void jz_otg_ctr_reset(void)
-{
+void jz_otg_ctr_reset(void) {
 	cpm_set_bit(SRBC_USB_SR, CPM_SRBC);
 	udelay(10);
 	cpm_clear_bit(SRBC_USB_SR, CPM_SRBC);
 }
 
-void jz_otg_phy_init(otg_mode_t mode)
-{
+void jz_otg_phy_init(otg_mode_t mode) {
 	unsigned int usbpcr1;
 
 	/* select dwc otg */
@@ -50,6 +47,7 @@ void jz_otg_phy_init(otg_mode_t mode)
 	cpm_clear_bit(USBPCR1_WORD_IF0, CPM_USBPCR1);
 	/* select utmi data bus width of port0 to 8bit/60M */
 	/*cpm_set_bit(USBPCR1_WORD_IF0, CPM_USBPCR1);*/
+
 	usbpcr1 = cpm_inl(CPM_USBPCR1);
 	usbpcr1 &= ~(0x7 << 23);
 	usbpcr1 |= (5 << 23);
@@ -87,8 +85,8 @@ void jz_otg_phy_init(otg_mode_t mode)
 		tmp = cpm_inl(CPM_USBPCR);
 		tmp |= 1 << USBPCR_USB_MODE | 1 << USBPCR_COMMONONN;
 		tmp &= ~(1 << USBPCR_OTG_DISABLE | 1 << USBPCR_SIDDQ |
-				0x03 << USBPCR_IDPULLUP_MASK | 1 << USBPCR_VBUSVLDEXT |
-				1 << USBPCR_VBUSVLDEXTSEL);
+			 0x03 << USBPCR_IDPULLUP_MASK | 1 << USBPCR_VBUSVLDEXT |
+			 1 << USBPCR_VBUSVLDEXTSEL);
 		cpm_outl(tmp, CPM_USBPCR);
 	}
 	/*cpm_set_bit(USBRDT_UTMI_RST, CPM_USBRDT);*/
@@ -110,18 +108,18 @@ void jz_otg_phy_init(otg_mode_t mode)
 	cpm_clear_bit(SRBC_USB_SR, CPM_SRBC);
 
 }
+
 EXPORT_SYMBOL(jz_otg_phy_init);
 
-
-int jz_otg_phy_is_suspend(void)
-{
+int jz_otg_phy_is_suspend(void) {
 	return (!(cpm_test_bit(7, CPM_OPCR)));
 }
+
 EXPORT_SYMBOL(jz_otg_phy_is_suspend);
 
 static int sft_id_set = false;
-void jz_otg_sft_id(int level)
-{
+
+void jz_otg_sft_id(int level) {
 	if (level) {
 		cpm_set_bit(USBRDT_IDDIG_REG, CPM_USBRDT);
 		printk("sft id ==================== 1\n");
@@ -135,10 +133,10 @@ void jz_otg_sft_id(int level)
 	else
 		sft_id_set = true;
 }
+
 EXPORT_SYMBOL(jz_otg_sft_id);
 
-void jz_otg_sft_id_off(void)
-{
+void jz_otg_sft_id_off(void) {
 	cpm_clear_bit(USBRDT_IDDIG_EN, CPM_USBRDT);
 	if (!jz_otg_phy_is_suspend())
 		mdelay(150);
@@ -146,15 +144,15 @@ void jz_otg_sft_id_off(void)
 		sft_id_set = true;
 	printk("sft id =========================off\n");
 }
+
 EXPORT_SYMBOL(jz_otg_sft_id_off);
 
-void jz_otg_phy_suspend(int suspend)
-{
+void jz_otg_phy_suspend(int suspend) {
 	if (!suspend && jz_otg_phy_is_suspend()) {
 		printk("EN PHY\n");
 		cpm_set_bit(7, CPM_OPCR);
 		if (sft_id_set == true)
-			mdelay(150);	/*2d6c0 phy clocks*/
+			mdelay(150);        /*2d6c0 phy clocks*/
 		sft_id_set = false;
 		udelay(45);
 	} else if (suspend && !jz_otg_phy_is_suspend()) {
@@ -163,11 +161,12 @@ void jz_otg_phy_suspend(int suspend)
 		udelay(5);
 	}
 }
+
 EXPORT_SYMBOL(jz_otg_phy_suspend);
 
-void jz_otg_phy_powerdown(void)
-{
-	cpm_set_bit(USBPCR_OTG_DISABLE,CPM_USBPCR);
-	cpm_set_bit(USBPCR_SIDDQ ,CPM_USBPCR);
+void jz_otg_phy_powerdown(void) {
+	cpm_set_bit(USBPCR_OTG_DISABLE, CPM_USBPCR);
+	cpm_set_bit(USBPCR_SIDDQ, CPM_USBPCR);
 }
+
 EXPORT_SYMBOL(jz_otg_phy_powerdown);

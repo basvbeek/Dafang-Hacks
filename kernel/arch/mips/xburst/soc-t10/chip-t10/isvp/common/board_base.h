@@ -1,5 +1,6 @@
 #ifndef __BOARD_BASE_H__
 #define __BOARD_BASE_H__
+
 #include <linux/i2c.h>
 #include <linux/pwm.h>
 
@@ -11,11 +12,11 @@ extern struct platform_device jz_button_device;
 #ifdef CONFIG_INV_MPU_IIO
 extern struct mpu_platform_data mpu9250_platform_data;
 #endif
-#if (defined(CONFIG_I2C_GPIO) || defined(CONFIG_I2C0_V12_JZ))
+#if defined(CONFIG_I2C_GPIO) || defined(CONFIG_I2C0_V12_JZ)
 extern struct i2c_board_info jz_i2c0_devs[];
 extern int jz_i2c0_devs_size;
 #endif
-#if (defined(CONFIG_I2C_GPIO) || defined(CONFIG_I2C1_V12_JZ))
+#if defined(CONFIG_I2C_GPIO) || defined(CONFIG_I2C1_V12_JZ)
 extern struct i2c_board_info jz_i2c1_devs[];
 extern int jz_i2c1_devs_size;
 #endif
@@ -41,6 +42,10 @@ extern struct jzmmc_platform_data tf_pdata;
 #endif
 #ifdef CONFIG_JZMMC_V12_MMC1
 extern struct jzmmc_platform_data sdio_pdata;
+#endif
+
+#ifdef CONFIG_JZ_TS_DMIC
+extern struct platform_device mic_device ;
 #endif
 
 #ifdef CONFIG_JZ_EPD_V12

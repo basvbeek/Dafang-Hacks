@@ -6,6 +6,14 @@
 #include <linux/spinlock.h>
 #include <linux/miscdevice.h>
 
+#ifdef CONFIG_SOC_T23
+#define SOC_VPU_VERSION     "1.0.0-03203fd46d"
+#define FRAME_TYPE_IVDC     (3)
+#define IVDC_BASE_ADDR      (0x13200000)
+#else
+#define SOC_VPU_VERSION		"1.0.0-03203fd46d"
+#endif
+
 #include "channel_vpu.h"
 
 extern int vpu_register(struct list_head *vlist);
@@ -61,7 +69,7 @@ enum vpu_phase {
 	RELASE_VPU,
 };
 
-#define FIND_VPU_TRY_TIME_THRESHOLD (10)
+#define FIND_VPU_TRY_TIME_THRESHOLD (100)
 
 struct vpu_list {
 	struct list_head	list;		/* the list of this struct list */
@@ -98,11 +106,40 @@ struct vpu_ops {
 	long (*resume)(struct device *dev);
 };
 
+enum jz_vpu_status {
+	VPU_STATUS_CLOSE,
+	VPU_STATUS_OPEN,
+};
+
 struct vpu {
 	struct list_head	vlist;
-	int			id;
+	int                 vpu_id;
+    int                 idx;
 	struct device		*dev;
 	struct vpu_ops		*ops;
 };
+
+#define vpu_readl(vpu, offset)		__raw_readl((vpu)->iomem + offset)
+
+#define vpu_writel(vpu, offset, value)	__raw_writel((value), (vpu)->iomem + offset)
+
+#define CLEAR_VPU_BIT(vpu,offset,bm)				\
+	do {							\
+		unsigned int stat;				\
+		stat = vpu_readl(vpu,offset);			\
+		vpu_writel(vpu,offset,stat & ~(bm));		\
+	} while(0)
+
+#define SET_VPU_BIT(vpu,offset,bm)				\
+	do {							\
+		unsigned int stat;				\
+		stat = vpu_readl(vpu,offset);			\
+		vpu_writel(vpu,offset,stat | (bm));		\
+	} while(0)
+
+#define check_vpu_status(STAT, fmt, args...) do {		\
+		if(vpu_stat & STAT)				\
+			dev_err(vpu->vpu.dev, fmt, ##args);	\
+	}while(0)
 
 #endif //__CHANNEL_H__

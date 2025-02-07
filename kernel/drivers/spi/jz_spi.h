@@ -311,7 +311,7 @@ static inline void set_tx_lsb(struct jz_spi *spi)
 {
 	u32 tmp;
 	tmp = spi_readl(spi, SSI_CR0);
-	tmp |= (tmp & ~CR0_TENDIAN_MASK) | (0x3 << CR0_TENDIAN_BIT);
+	tmp |= (tmp & ~CR0_TENDIAN_MASK) | (0x2 << CR0_TENDIAN_BIT);
 	spi_writel(spi, SSI_CR0, tmp);
 }
 
@@ -327,7 +327,7 @@ static inline void set_rx_lsb(struct jz_spi *spi)
 {
 	u32 tmp;
 	tmp = spi_readl(spi, SSI_CR0);
-	tmp |= (tmp & ~CR0_RENDIAN_MASK) | (0x3 << CR0_RENDIAN_BIT);
+	tmp |= (tmp & ~CR0_RENDIAN_MASK) | (0x2 << CR0_RENDIAN_BIT);
 	spi_writel(spi, SSI_CR0, tmp);
 }
 
