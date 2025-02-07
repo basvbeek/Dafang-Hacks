@@ -9,3 +9,4 @@ _install/*
 .viminfo
 .wget-hsts
 .lesshst
+.gitconfig
