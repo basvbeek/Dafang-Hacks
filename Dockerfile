@@ -9,6 +9,9 @@ RUN \
   autoconf \
   libtool \
   ftp-upload \
+  vim \
+  flex \
+  bison \
   wget \
   bc \
   u-boot-tools \
