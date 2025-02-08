@@ -47,7 +47,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-static inline is_gpio_from_chip(int gpio_num)
+static inline int is_gpio_from_chip(int gpio_num)
 {
 	return gpio_num < (GPIO_NR_PORTS * 32) ? 1 : 0;
 }

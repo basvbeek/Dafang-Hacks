@@ -17,6 +17,8 @@ extern int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd,
 extern int mmc_send_status(struct mmc *mmc, int timeout);
 extern int mmc_set_blocklen(struct mmc *mmc, int len);
 
+int get_mmc_csd_perm_w_protect();
+
 #ifndef CONFIG_SPL_BUILD
 
 extern unsigned long mmc_berase(int dev_num, lbaint_t start, lbaint_t blkcnt);

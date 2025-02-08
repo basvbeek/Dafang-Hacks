@@ -128,7 +128,8 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 	debug("image entry point: 0x%X\n", spl_image->entry_point);
 	image_entry();
 }
-
+#else
+	extern void flush_cache_all(void);
 #endif /* CONFIG_SPL_BUILD */
 
 /*

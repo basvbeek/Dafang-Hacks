@@ -118,7 +118,7 @@ static inline void set_io_port_base(unsigned long base)
  * Change virtual addresses to physical addresses and vv.
  * These are trivial on the 1:1 Linux/MIPS mapping
  */
-extern inline phys_addr_t virt_to_phys(volatile void * address)
+static inline phys_addr_t virt_to_phys(volatile void * address)
 {
 #ifndef CONFIG_64BIT
 	return CPHYSADDR(address);
@@ -127,7 +127,7 @@ extern inline phys_addr_t virt_to_phys(volatile void * address)
 #endif
 }
 
-extern inline void * phys_to_virt(unsigned long address)
+static inline void * phys_to_virt(unsigned long address)
 {
 #ifndef CONFIG_64BIT
 	return (void *)KSEG0ADDR(address);
@@ -139,7 +139,7 @@ extern inline void * phys_to_virt(unsigned long address)
 /*
  * IO bus memory addresses are also 1:1 with the physical address
  */
-extern inline unsigned long virt_to_bus(volatile void * address)
+static inline unsigned long virt_to_bus(volatile void * address)
 {
 #ifndef CONFIG_64BIT
 	return CPHYSADDR(address);
@@ -148,7 +148,7 @@ extern inline unsigned long virt_to_bus(volatile void * address)
 #endif
 }
 
-extern inline void * bus_to_virt(unsigned long address)
+static inline void * bus_to_virt(unsigned long address)
 {
 #ifndef CONFIG_64BIT
 	return (void *)KSEG0ADDR(address);
@@ -161,22 +161,22 @@ extern inline void * bus_to_virt(unsigned long address)
  * isa_slot_offset is the address where E(ISA) busaddress 0 is mapped
  * for the processor.
  */
-extern unsigned long isa_slot_offset;
+static unsigned long isa_slot_offset;
 
-extern void * __ioremap(unsigned long offset, unsigned long size, unsigned long flags);
+static void * __ioremap(unsigned long offset, unsigned long size, unsigned long flags);
 
 #if 0
-extern inline void *ioremap(unsigned long offset, unsigned long size)
+static inline void *ioremap(unsigned long offset, unsigned long size)
 {
 	return __ioremap(offset, size, _CACHE_UNCACHED);
 }
 
-extern inline void *ioremap_nocache(unsigned long offset, unsigned long size)
+static inline void *ioremap_nocache(unsigned long offset, unsigned long size)
 {
 	return __ioremap(offset, size, _CACHE_UNCACHED);
 }
 
-extern void iounmap(void *addr);
+static void iounmap(void *addr);
 #endif
 
 /*
@@ -469,9 +469,9 @@ __OUTS(w,l,4)
  *    be discarded.  This operation is necessary before dma operations
  *    to the memory.
  */
-extern void (*_dma_cache_wback_inv)(unsigned long start, unsigned long size);
-extern void (*_dma_cache_wback)(unsigned long start, unsigned long size);
-extern void (*_dma_cache_inv)(unsigned long start, unsigned long size);
+static void (*_dma_cache_wback_inv)(unsigned long start, unsigned long size);
+static void (*_dma_cache_wback)(unsigned long start, unsigned long size);
+static void (*_dma_cache_inv)(unsigned long start, unsigned long size);
 
 #define dma_cache_wback_inv(start,size)	_dma_cache_wback_inv(start,size)
 #define dma_cache_wback(start,size)	_dma_cache_wback(start,size)

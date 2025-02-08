@@ -707,7 +707,7 @@ int jz_sfc_write(struct spi_flash *flash, u32 offset, size_t length, const void 
 	unsigned char cmd[7];
 	unsigned tmp = 0;
 	int i;
-	unsigned char *send_buf = (unsigned char *)buf;
+	unsigned int *send_buf = (unsigned int *)buf;
 	unsigned int pagelen = 0,len = 0,retlen = 0;
 
 	jz_sfc_set_address_mode(flash,1);
@@ -1109,7 +1109,7 @@ int sfc_nor_read(struct spi_flash *flash, unsigned int src_addr, unsigned int co
 
 	jz_sfc_writel(1 << 2,SFC_TRIG);
 
-	ret = jz_sfc_read(flash,src_addr,count,dst_addr);
+	ret = jz_sfc_read(flash,src_addr,count,(void*)dst_addr);
 	if (ret) {
 		printf("sfc read error\n");
 		return -1;
@@ -1142,7 +1142,7 @@ int sfc_nor_write(struct spi_flash *flash, unsigned int src_addr, unsigned int c
 
 	jz_sfc_writel(1 << 2,SFC_TRIG);
 
-	ret = jz_sfc_write(flash,src_addr,count,dst_addr);
+	ret = jz_sfc_write(flash,src_addr,count,(void*)dst_addr);
 	if (ret) {
 		printf("sfc write error\n");
 		return -1;
@@ -1268,7 +1268,7 @@ void read_sfcnand_id(u8 *response,size_t len)
 	unsigned char cmd[1];
 	cmd[0] = CMD_RDID;
 	sfc_send_cmd(&cmd[0],len,0,1,0,1,0);
-	sfc_read_data(response,len);
+	sfc_read_data((unsigned int*)response,len);
 	printf("id0=%02x\n",response[0]);
 	printf("id1=%02x\n",response[1]);
 	printf("SFC_STA_RT=0x%08x,\n",jz_sfc_readl(SFC_STA_RT));
@@ -1384,9 +1384,9 @@ struct spi_flash *spi_flash_probe_ingenic(struct spi_slave *spi, u8 *idcode)
 		printf("ingenic: Failed to allocate memory\n");
 		return NULL;
 	}
-	flash->read = sfc_nor_read;
+	flash->read = (int (*)(struct spi_flash *, u32,  size_t,  void *))sfc_nor_read;
 	flash->erase = sfc_nor_erase;
-	flash->write = sfc_nor_write;
+	flash->write = (int (*)(struct spi_flash *, u32,  size_t,  const void *)) sfc_nor_write;
 
 	flash->page_size = gparams.page_size;
 	flash->sector_size = gparams.sector_size;
